@@ -89,8 +89,8 @@ export default function PastPanel() {
           </p>
           <p className="muted mt-1 text-sm">{pastError}</p>
           <p className="muted mt-2 text-sm">
-            Is the ML service running? Set <code>RENDER_ML_BASE_URL</code> (defaults to
-            http://127.0.0.1:8000).
+            Is the ML service running? Set <code>ML_MODE=inline</code> on Vercel (no Render needed) or
+            <code>RENDER_ML_BASE_URL</code> for an external Python service.
           </p>
         </div>
       </div>
