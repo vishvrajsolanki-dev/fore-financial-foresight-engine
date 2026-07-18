@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+build/
+.vercel/
+.env
+.env.local
+.env*.local
+*.log
+npm-debug.log*
+.DS_Store
+
+# Python (ml-service)
+ml-service/.venv/
+ml-service/__pycache__/
+ml-service/*.pyc
+ml-service/.pytest_cache/

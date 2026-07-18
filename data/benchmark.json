@@ -1,0 +1,11 @@
+{
+  "_note": "Placeholder shell. TASK-004 (Vishvraj + Kavya) generates the real static benchmark data here, covering all 5 income brackets x 3 city tiers, per CONTRACT-005 in docs/CONTRACTS.md. Generated once before the build starts, never live-generated during the demo.",
+  "income_bracket": "string",
+  "city_tier": "string",
+  "categories": [
+    {
+      "category": "string",
+      "percentiles": { "p25": 0, "p50": 0, "p75": 0, "p90": 0 }
+    }
+  ]
+}

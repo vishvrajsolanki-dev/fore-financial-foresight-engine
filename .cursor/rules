@@ -1,0 +1,33 @@
+# FORE — Cursor Rules
+Auto-loaded into every Tab / Cmd+K / Agent Mode session in this repo.
+
+## Stack (locked — see docs/CONTRACTS.md STACK DECISION block)
+- Frontend + API routes: Next.js 14 App Router, TypeScript, Tailwind CSS + shadcn/ui, Recharts
+- ML service: Python (FastAPI), deployed on Render as an always-on instance — never assume a
+  co-located Vercel function; all calls to it are genuine cross-origin HTTP via RENDER_ML_BASE_URL
+- Chat/LLM: Groq API + Llama 3.1, real tool-calling (never a prompt-only guess)
+- State: in-memory `financial_context` object (types/financialContext.ts) — no database, no auth
+
+## Non-negotiable rules
+1. Every contract shape lives in docs/CONTRACTS.md. If your code's shape and the contract's shape
+   disagree, the contract wins — flag it, don't silently diverge.
+2. `canIAfford()` must be a real function call from the LLM, never a number the model states on its
+   own. A stated day-shift number without a matching tool_calls entry is a contract violation.
+3. Tier 2 features are ALWAYS gated behind `NEXT_PUBLIC_FEATURE_<NAME>`, default `false`. Never merge
+   a Tier 2 feature unflagged.
+4. Never push directly to `main`. Branch per the naming convention in CONTRACTS.md's Git protocol,
+   PR + squash merge only.
+5. Two deploy targets exist on purpose: Vercel (Next.js) and Render (Python ML service). Don't
+   intermix Next.js API route conventions with the FastAPI service — check which directory you're
+   in (`ml-service/` = Python/Render, everything else = Next.js/Vercel).
+6. No secrets hardcoded, ever. Env vars only: RENDER_ML_BASE_URL, GROQ_API_KEY, ELEVENLABS_API_KEY,
+   EXA_API_KEY, NEXT_PUBLIC_FEATURE_*.
+
+## Where things live
+- `types/financialContext.ts` — CONTRACT-001, the shared data spine
+- `lib/api/pastClient.ts` — single client module for PAST data (placeholder swap point)
+- `lib/tools/canIAfford.ts` — DECIDE's tool-call definition
+- `ml-service/` — Python FastAPI microservice (classify, burn-rate, can-i-afford)
+- `data/` — static synthetic personas + benchmark JSON, generated once, never at runtime
+
+Full task-by-task detail: see each TASK-0XX_handout.md in docs/.
