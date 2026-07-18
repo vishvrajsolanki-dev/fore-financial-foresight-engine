@@ -9,21 +9,21 @@ export default function PersonaCompare() {
   if (!features.personaCompare) return null;
 
   return (
-    <div className="mt-3 flex flex-wrap gap-2" aria-label="Quick persona switch">
-      {personas.map((p) => (
-        <button
-          key={p.session_id}
-          type="button"
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-            activeId === p.session_id
-              ? "bg-[var(--accent)] text-white"
-              : "border border-[var(--border)] hover:bg-[var(--bg-soft)]"
-          }`}
-          onClick={() => selectPersona(p.session_id)}
-        >
-          {p.persona.split(" ")[0]}
-        </button>
-      ))}
+    <div className="persona-chips" aria-label="Quick persona switch">
+      {personas.map((p) => {
+        const short = p.persona.split("—")[0]?.trim().split(" ")[0] ?? p.persona;
+        const active = activeId === p.session_id;
+        return (
+          <button
+            key={p.session_id}
+            type="button"
+            className={`persona-chip ${active ? "persona-chip-active" : ""}`}
+            onClick={() => selectPersona(p.session_id)}
+          >
+            {short}
+          </button>
+        );
+      })}
     </div>
   );
 }

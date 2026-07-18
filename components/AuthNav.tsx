@@ -12,20 +12,15 @@ export default function AuthNav() {
 
   if (!authUser) {
     return (
-      <div className="flex gap-2 text-sm">
-        <Link href="/login" className="btn-ghost text-xs px-3 py-1.5">
-          Log in
-        </Link>
-        <Link href="/register" className="btn text-xs px-3 py-1.5">
-          Register
-        </Link>
-      </div>
+      <Link href="/login" className="btn text-xs px-3 py-1.5">
+        Sign in
+      </Link>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <span className="muted hidden sm:inline">{authUser.email}</span>
+    <div className="flex items-center gap-2">
+      <span className="muted hidden lg:inline text-xs truncate max-w-[10rem]">{authUser.email}</span>
       <button
         type="button"
         className="btn-ghost text-xs px-3 py-1.5"
