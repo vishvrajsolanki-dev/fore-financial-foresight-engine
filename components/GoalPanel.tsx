@@ -16,6 +16,7 @@ export default function GoalPanel() {
   const { ctx, setGoal } = useFinancialContext();
   const [amount, setAmount] = useState("50000");
   const [date, setDate] = useState("2026-12-31");
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!ctx) return null;
   const goal = ctx.goal;
@@ -27,22 +28,33 @@ export default function GoalPanel() {
   return (
     <div className="card">
       <p className="muted text-sm">Savings goal</p>
-      <p className="text-lg font-semibold mt-1">Set a target, see if you&apos;re on pace</p>
+      <p className="mt-1 text-lg font-semibold">Set a target, see if you&apos;re on pace</p>
 
       {!burnReady && (
-        <p className="mt-3 text-sm muted">
-          Open PAST first (or wait for your spending profile to load) — goal pace needs your burn-rate
-          trend.
+        <p className="muted mt-3 text-sm">
+          Open PAST first (or wait for your spending profile to load) — goal pace needs your
+          burn-rate trend.
         </p>
       )}
 
       <form
-        className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto] items-end"
+        className="mt-4 grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!burnReady) return;
+          setFormError(null);
+          if (!burnReady) {
+            setFormError("Burn rate isn't ready yet — open PAST or wait a moment.");
+            return;
+          }
           const amt = Number(amount);
-          if (!Number.isFinite(amt) || amt <= 0) return;
+          if (!Number.isFinite(amt) || amt <= 0) {
+            setFormError("Target amount must be a positive number.");
+            return;
+          }
+          if (pastDate) {
+            setFormError("Target date is in the past — pick a future date.");
+            return;
+          }
           setGoal(amt, date);
         }}
       >
@@ -53,7 +65,10 @@ export default function GoalPanel() {
             type="number"
             min={1}
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              setFormError(null);
+            }}
           />
         </label>
         <label className="grid gap-1">
@@ -62,7 +77,10 @@ export default function GoalPanel() {
             className="input"
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+              setDate(e.target.value);
+              setFormError(null);
+            }}
           />
         </label>
         <button className="btn" type="submit" disabled={!burnReady}>
@@ -70,9 +88,9 @@ export default function GoalPanel() {
         </button>
       </form>
 
-      {pastDate && (
+      {(formError || pastDate) && (
         <p className="mt-3 text-sm" style={{ color: "var(--warn)" }}>
-          Target date is in the past — pick a future date.
+          {formError ?? "Target date is in the past — pick a future date."}
         </p>
       )}
 

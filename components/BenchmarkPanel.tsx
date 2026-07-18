@@ -76,18 +76,22 @@ export default function BenchmarkPanel() {
   if (!persona || !row) {
     return (
       <div className="card">
-        <p className="muted">No benchmark available for this persona&apos;s bracket.</p>
+        <p className="muted text-sm">Peer benchmark</p>
+        <p className="mt-1 text-lg font-semibold">No peer data for this bracket</p>
+        <p className="muted mt-1 text-sm">
+          No benchmark available for this persona&apos;s income bracket / city tier.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="card mt-4">
+    <div className="card">
       <p className="muted text-sm">Peer benchmark</p>
-      <p className="text-lg font-semibold mt-1">
+      <p className="mt-1 text-lg font-semibold">
         {persona.income_bracket} income · {persona.city_tier}
       </p>
-      <p className="muted text-sm mt-1">
+      <p className="muted mt-1 text-sm">
         Your monthly spend vs peers in the same bracket (static reference data).
       </p>
 

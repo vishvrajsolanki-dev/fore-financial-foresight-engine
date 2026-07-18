@@ -2,6 +2,7 @@
 // Owner: TASK-002 (Drashti). 3-tab nav shell shared by PAST / DECIDE / AHEAD, plus the demo
 // persona switcher (so PAST/DECIDE/AHEAD all operate on one selected financial_context).
 // Consumed by: TASK-006 (shares this layout).
+// TASK-010: disclaimer visible on every face + nav/mobile consistency polish.
 
 "use client";
 
@@ -15,6 +16,9 @@ const TABS = [
   { href: "/ahead", label: "AHEAD", hint: "Where you're headed" },
 ];
 
+const DISCLAIMER =
+  "Not licensed financial advice — FORE is a hackathon demo, not a licensed advisory product.";
+
 export default function FacesLayout({
   children,
 }: {
@@ -24,19 +28,21 @@ export default function FacesLayout({
   const { personas, activeId, ctx, selectPersona } = useFinancialContext();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
-      <header className="mb-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6">
+      <header className="mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              FORE <span className="muted font-normal">· Financial Foresight Engine</span>
+              FORE{" "}
+              <span className="muted font-normal">· Financial Foresight Engine</span>
             </h1>
-            <p className="muted text-sm mt-1">
-              One financial context, three linked views — the model runs real math, never a guess.
+            <p className="muted mt-1 text-sm">
+              One financial context, three linked views — the model runs real math, never a
+              guess.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="persona" className="muted text-sm">
+            <label htmlFor="persona" className="muted text-sm whitespace-nowrap">
               Demo persona
             </label>
             <select
@@ -57,32 +63,41 @@ export default function FacesLayout({
           </div>
         </div>
 
-        <nav className="mt-5 flex gap-2">
+        <nav className="mt-5 flex flex-wrap gap-2" aria-label="FORE faces">
           {TABS.map((t) => {
             const active = pathname === t.href;
             return (
               <Link
                 key={t.href}
                 href={t.href}
-                className={`rounded-xl px-4 py-2 border transition-colors ${
+                className={`rounded-xl border px-3 py-2 transition-colors sm:px-4 ${
                   active
                     ? "border-transparent bg-[var(--accent)] text-white"
                     : "border-[var(--border)] hover:bg-[var(--bg-soft)]"
                 }`}
               >
                 <span className="font-semibold">{t.label}</span>
-                <span className={`ml-2 text-xs ${active ? "text-white/80" : "muted"}`}>
+                <span
+                  className={`ml-2 hidden text-xs sm:inline ${
+                    active ? "text-white/80" : "muted"
+                  }`}
+                >
                   {t.hint}
                 </span>
               </Link>
             );
           })}
         </nav>
+
+        {/* Visible on every face without scrolling — TASK-010 deliverable. */}
+        <p className="disclaimer mt-4" role="note">
+          {DISCLAIMER}
+        </p>
       </header>
 
-      <main>
+      <main className="flex-1">
         {!activeId ? (
-          <div className="card text-center py-12">
+          <div className="card py-12 text-center">
             <p className="text-lg font-medium">Select a demo persona to begin</p>
             <p className="muted mt-1">
               Each persona has ~120 real-shaped transactions across 3 months.
@@ -93,10 +108,10 @@ export default function FacesLayout({
         )}
       </main>
 
-      <footer className="mt-10 border-t border-[var(--border)] pt-4">
+      <footer className="mt-10 border-t border-[var(--border)] pt-4 pb-2">
         <p className="muted text-xs">
           {ctx?.persona ? `Active context: ${ctx.persona}. ` : ""}
-          Not licensed financial advice — demo/hackathon build.
+          {DISCLAIMER}
         </p>
       </footer>
     </div>

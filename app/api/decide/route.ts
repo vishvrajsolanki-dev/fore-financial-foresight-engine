@@ -43,7 +43,9 @@ interface DecideVerdict {
 // is never mistaken for "lakh". Amount is capped to a sane ceiling.
 const AMOUNT_RE =
   /(?:₹|rs\.?|inr)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(k|thousand|lakhs?|lac|cr|crores?)?(?![a-z])/i;
-const AFFORD_INTENT_RE = /(afford|buy|purchase|spend|should i|can i|get)/i;
+// Include follow-up phrasing from the demo script ("what about ₹5,000 instead?").
+const AFFORD_INTENT_RE =
+  /(afford|buy|purchase|spend|should i|can i|get|what about|how about|instead)/i;
 const TRAILING_FILLER_RE =
   /\s+(next|this|last)?\s*(month|week|year|now|today|please|instead|for|at|in|on)\b.*$/i;
 
@@ -59,8 +61,17 @@ function parseAmount(message: string): number | null {
   return n;
 }
 
+const FILLER_ITEM_RE =
+  /^(instead|please|now|today|this|that|it|one|ones|month|week|year)$/i;
+
 function clean(item: string): string {
-  return item.trim().replace(TRAILING_FILLER_RE, "").replace(/[.?!,]+$/, "").trim() || "this expense";
+  const cleaned = item
+    .trim()
+    .replace(TRAILING_FILLER_RE, "")
+    .replace(/[.?!,]+$/, "")
+    .trim();
+  if (!cleaned || FILLER_ITEM_RE.test(cleaned)) return "this expense";
+  return cleaned;
 }
 
 function guessItem(message: string): string {

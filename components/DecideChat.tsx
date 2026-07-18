@@ -3,10 +3,12 @@
 // Shows a "checked your numbers" badge when the tool was actually called (trust signal), and a
 // graceful "still checking" state past 2s (CONTRACT-006), never a silent hang. Writes each verdict
 // back into the shared financial_context so AHEAD reflects it.
+// TASK-010: face-intro consistency, mobile form polish, clear chat on persona switch.
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import FaceIntro from "@/components/FaceIntro";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 interface ChatMsg {
@@ -29,6 +31,16 @@ export default function DecideChat() {
   const [loading, setLoading] = useState(false);
   const [slow, setSlow] = useState(false);
   const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionId = ctx?.session_id ?? null;
+
+  // Edge case: switching persona mid-chat must not leave the previous persona's thread on screen.
+  useEffect(() => {
+    setMessages([]);
+    setInput("");
+    setLoading(false);
+    setSlow(false);
+    if (slowTimer.current) clearTimeout(slowTimer.current);
+  }, [sessionId]);
 
   async function ask(question: string) {
     const q = question.trim();
@@ -76,20 +88,15 @@ export default function DecideChat() {
 
   return (
     <div className="grid gap-4">
-      <div className="card">
-        <p className="muted text-sm">DECIDE</p>
-        <p className="text-lg font-semibold mt-1">
-          Ask if you can afford something — I run the real numbers.
-        </p>
-        <p className="muted text-sm mt-1">
-          Every affordability answer comes from a live <code>canIAfford()</code> function call, never
-          a guessed number.
-        </p>
-      </div>
+      <FaceIntro
+        face="DECIDE"
+        title="Ask if you can afford something — I run the real numbers."
+        blurb="Every affordability answer comes from a live canIAfford() function call, never a guessed number."
+      />
 
       <div className="card min-h-[16rem]">
         {messages.length === 0 ? (
-          <p className="muted">No questions yet. Try one of the suggestions below.</p>
+          <p className="muted text-sm">No questions yet. Try one of the suggestions below.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {messages.map((m, i) => (
@@ -108,11 +115,18 @@ export default function DecideChat() {
                 }
               >
                 {m.role === "assistant" && m.toolCalled && (
-                  <span className="pill mb-2" style={{ color: "var(--accent-2)", borderColor: "rgba(52,211,153,.4)", background: "rgba(52,211,153,.12)" }}>
+                  <span
+                    className="pill mb-2"
+                    style={{
+                      color: "var(--accent-2)",
+                      borderColor: "rgba(52,211,153,.4)",
+                      background: "rgba(52,211,153,.12)",
+                    }}
+                  >
                     ✓ checked your numbers
                   </span>
                 )}
-                <p className="whitespace-pre-wrap">{m.text}</p>
+                <p className="whitespace-pre-wrap text-sm sm:text-base">{m.text}</p>
               </div>
             ))}
             {loading && (
@@ -126,14 +140,20 @@ export default function DecideChat() {
 
       <div className="flex flex-wrap gap-2">
         {SUGGESTIONS.map((s) => (
-          <button key={s} className="btn-ghost text-sm" onClick={() => ask(s)} disabled={loading}>
+          <button
+            key={s}
+            type="button"
+            className="btn-ghost text-sm"
+            onClick={() => ask(s)}
+            disabled={loading}
+          >
             {s}
           </button>
         ))}
       </div>
 
       <form
-        className="flex gap-2"
+        className="flex flex-col gap-2 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           ask(input);
@@ -145,8 +165,13 @@ export default function DecideChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading}
+          aria-label="Affordability question"
         />
-        <button className="btn" type="submit" disabled={loading || !input.trim()}>
+        <button
+          className="btn shrink-0"
+          type="submit"
+          disabled={loading || !input.trim()}
+        >
           Ask
         </button>
       </form>
