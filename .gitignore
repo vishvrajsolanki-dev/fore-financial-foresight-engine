@@ -14,7 +14,6 @@ tsconfig.tsbuildinfo
 
 # Python (ml-service)
 ml-service/.venv/
-ml-service/__pycache__/
-ml-service/*.pyc
-ml-service/.pytest_cache/
-tsconfig.tsbuildinfo
+**/__pycache__/
+*.pyc
+.pytest_cache/
