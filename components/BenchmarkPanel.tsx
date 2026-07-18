@@ -8,26 +8,17 @@
 
 import { useEffect, useMemo } from "react";
 import benchmarkData from "@/data/benchmark.json";
+import type { BenchmarkRow } from "@/types/financialContext";
 import { useFinancialContext } from "@/lib/context/financialContext";
 
-interface BenchmarkBracket {
-  income_bracket: string;
-  city_tier: string;
-  categories: {
-    category: string;
-    percentiles: { p25: number; p50: number; p75: number; p90: number };
-  }[];
-}
-
-const BRACKETS = benchmarkData as BenchmarkBracket[];
+const BRACKETS = benchmarkData as BenchmarkRow[];
 
 const CATEGORY_LABELS: Record<string, string> = {
-  food_dining: "Food & dining",
-  groceries: "Groceries",
-  transport: "Transport",
-  entertainment: "Entertainment",
+  food: "Food",
   shopping: "Shopping",
-  utilities: "Utilities",
+  bills: "Bills",
+  entertainment: "Entertainment",
+  savings: "Savings",
 };
 
 // Piecewise-linear percentile placement across the four anchors.
@@ -125,46 +116,40 @@ export default function BenchmarkPanel() {
       </p>
 
       <ul className="mt-4 space-y-3">
-        {rows.map((row) => (
-          <li key={row.category}>
-            <div className="flex items-baseline justify-between text-sm">
-              <span className="font-medium">
-                {CATEGORY_LABELS[row.category] ?? row.category}
-              </span>
-              <span className="text-slate-400">
-                ₹{row.user_value.toLocaleString("en-IN")}/mo ·{" "}
-                <span
-                  className={
-                    row.percentile >= 75
-                      ? "text-rose-300"
-                      : row.percentile >= 50
-                        ? "text-amber-300"
-                        : "text-emerald-300"
-                  }
-                >
-                  p{row.percentile}
+        {rows.map((row) => {
+          // For savings a high percentile is good; for spend categories it means overspending.
+          const concern =
+            row.category === "savings" ? 100 - row.percentile : row.percentile;
+          const tone =
+            concern >= 75
+              ? { text: "text-rose-300", bar: "bg-rose-400" }
+              : concern >= 50
+                ? { text: "text-amber-300", bar: "bg-amber-400" }
+                : { text: "text-emerald-300", bar: "bg-emerald-400" };
+          return (
+            <li key={row.category}>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="font-medium">
+                  {CATEGORY_LABELS[row.category] ?? row.category}
                 </span>
-              </span>
-            </div>
-            <div className="mt-1 h-2 rounded-full bg-slate-800">
-              <div
-                className={
-                  "h-2 rounded-full " +
-                  (row.percentile >= 75
-                    ? "bg-rose-400"
-                    : row.percentile >= 50
-                      ? "bg-amber-400"
-                      : "bg-emerald-400")
-                }
-                style={{ width: `${row.percentile}%` }}
-              />
-            </div>
-            <p className="mt-0.5 text-[11px] text-slate-500">
-              peer median ₹{row.p50.toLocaleString("en-IN")}/mo — spends more
-              than {row.percentile}% of peers
-            </p>
-          </li>
-        ))}
+                <span className="text-slate-400">
+                  ₹{row.user_value.toLocaleString("en-IN")}/mo ·{" "}
+                  <span className={tone.text}>p{row.percentile}</span>
+                </span>
+              </div>
+              <div className="mt-1 h-2 rounded-full bg-slate-800">
+                <div
+                  className={"h-2 rounded-full " + tone.bar}
+                  style={{ width: `${row.percentile}%` }}
+                />
+              </div>
+              <p className="mt-0.5 text-[11px] text-slate-500">
+                peer median ₹{row.p50.toLocaleString("en-IN")}/mo — higher than{" "}
+                {row.percentile}% of peers
+              </p>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

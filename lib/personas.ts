@@ -1,23 +1,20 @@
 // FORE — lib/personas.ts
 // Static demo personas (TASK-004 output), imported at build time — never generated at runtime.
-// Regenerate via `node scripts/generate-data.mjs` (deterministic, seeded).
+// Regenerate via `python3 scripts/generate_task004_data.py` (deterministic, seeded).
 
-import type { Transaction } from "@/types/financialContext";
-import arjun from "@/data/personas/arjun.json";
-import meera from "@/data/personas/meera.json";
-import rohan from "@/data/personas/rohan.json";
+import type { PersonaDataset } from "@/types/financialContext";
+import arjunSaver from "@/data/personas/arjun_saver.json";
+import mayaFoodie from "@/data/personas/maya_foodie.json";
+import riyaSocial from "@/data/personas/riya_social.json";
 
-export interface PersonaData {
-  persona: string;
-  display_name: string;
-  monthly_income: number;
-  income_bracket: string;
-  city_tier: string;
-  transactions: Transaction[];
-}
+export type { PersonaDataset };
 
-export const PERSONAS: PersonaData[] = [arjun, meera, rohan];
+export const PERSONAS: PersonaDataset[] = [
+  arjunSaver,
+  mayaFoodie,
+  riyaSocial,
+] as PersonaDataset[];
 
-export function getPersona(id: string): PersonaData | null {
+export function getPersona(id: string): PersonaDataset | null {
   return PERSONAS.find((p) => p.persona === id) ?? null;
 }

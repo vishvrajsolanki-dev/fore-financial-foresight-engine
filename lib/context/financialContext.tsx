@@ -14,7 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import type { FinancialContext } from "@/types/financialContext";
-import { getPersona, PERSONAS, type PersonaData } from "@/lib/personas";
+import { getPersona, PERSONAS, type PersonaDataset } from "@/lib/personas";
 import { getPastData } from "@/lib/api/pastClient";
 
 function emptyContext(): FinancialContext {
@@ -33,8 +33,8 @@ function emptyContext(): FinancialContext {
 
 interface FinancialContextStore {
   ctx: FinancialContext;
-  activePersona: PersonaData | null;
-  personas: PersonaData[];
+  activePersona: PersonaDataset | null;
+  personas: PersonaDataset[];
   selectPersona: (id: string) => void;
   update: (patch: Partial<FinancialContext>) => void;
 }
@@ -47,7 +47,7 @@ export function FinancialContextProvider({
   children: ReactNode;
 }) {
   const [ctx, setCtx] = useState<FinancialContext>(emptyContext);
-  const [activePersona, setActivePersona] = useState<PersonaData | null>(null);
+  const [activePersona, setActivePersona] = useState<PersonaDataset | null>(null);
 
   const update = useCallback((patch: Partial<FinancialContext>) => {
     setCtx((prev) => ({ ...prev, ...patch }));
