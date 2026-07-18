@@ -13,12 +13,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Only gate persistence APIs — face pages run client-side demo mode without a JWT.
   const isProtected =
-    pathname.startsWith("/past") ||
-    pathname.startsWith("/decide") ||
-    pathname.startsWith("/ahead") ||
-    pathname.startsWith("/api/context") ||
-    pathname.startsWith("/api/upload");
+    pathname.startsWith("/api/context") || pathname.startsWith("/api/upload");
 
   if (!isProtected) {
     return NextResponse.next();

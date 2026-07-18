@@ -93,33 +93,54 @@ function LoginForm() {
 
   const busy = loading || providerLoading !== null;
 
-  // Demo-only stub: no real OAuth — creates a guest JWT session when DATABASE_URL
-  // is set, otherwise falls through to the client-side demo flow.
+  // Demo-only stub: no real OAuth. Best-effort guest JWT when DB is available,
+  // but always advance to the faces — they work in client-side demo mode without auth.
   async function providerSignIn(provider: Provider) {
     if (busy) return;
     setError(null);
     setProviderLoading(provider);
+
+    const demoEmail = `demo-${provider.toLowerCase()}@fore.app`;
+    const demoPassword = "fore-demo-guest-not-for-production";
+
     try {
-      const res = await fetch("/api/auth/demo", {
+      let res = await fetch("/api/auth/demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider }),
         credentials: "include",
       });
-      const data = await res.json();
-      if (res.status === 503) {
-        router.push(next);
-        router.refresh();
+
+      if (!res.ok && res.status !== 503) {
+        res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: demoEmail, password: demoPassword }),
+          credentials: "include",
+        });
+        if (res.status === 401) {
+          res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: demoEmail,
+              password: demoPassword,
+              demoPersonaId: "persona-priya",
+            }),
+            credentials: "include",
+          });
+        }
+      }
+
+      if (res.ok) {
+        window.location.assign(next);
         return;
       }
-      if (!res.ok) throw new Error(data.error || "Sign-in failed");
-      router.push(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed");
-    } finally {
-      setProviderLoading(null);
+    } catch {
+      // Non-fatal — face routes do not require server auth.
     }
+
+    window.location.assign(next);
   }
 
   async function onSubmit(e: FormEvent) {
