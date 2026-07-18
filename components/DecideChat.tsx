@@ -24,6 +24,13 @@ const SUGGESTIONS = [
   "Hi",
 ];
 
+// CONTRACT-006: past 2s show a graceful "still checking" state; never a silent hang. We also cap
+// the browser request itself so a stalled route/network surfaces to the user instead of spinning
+// forever — the affordability call underneath already has its own 5s server-side timeout, this is
+// the outer ceiling for the whole round-trip (two LLM hops + the tool call).
+const SLOW_AFTER_MS = 2000;
+const REQUEST_TIMEOUT_MS = 15000;
+
 export default function DecideChat() {
   const { ctx, applyDecideVerdict } = useFinancialContext();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -49,13 +56,24 @@ export default function DecideChat() {
     setInput("");
     setLoading(true);
     setSlow(false);
-    slowTimer.current = setTimeout(() => setSlow(true), 2000);
+    slowTimer.current = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+
+    // Send prior turns so a contextual follow-up ("what about ₹5,000 instead?") re-runs the tool
+    // against the right item instead of losing the thread. Error bubbles are excluded.
+    const history = messages
+      .filter((m) => !m.error)
+      .map((m) => ({ role: m.role, content: m.text }));
+
+    // Abort a stalled request so the UI never hangs silently (CONTRACT-006).
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const res = await fetch("/api/decide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: q, transactions: ctx.transactions }),
+        body: JSON.stringify({ message: q, transactions: ctx.transactions, history }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) {
@@ -64,22 +82,37 @@ export default function DecideChat() {
           { role: "assistant", text: data.error || "Something went wrong.", error: true },
         ]);
       } else {
-        if (data.verdict) applyDecideVerdict(data.verdict);
+        // A verdict is only trustworthy if the tool actually returned a real projection. If the
+        // calculation service was unreachable the route still replies (graceful, no crash) but with
+        // an empty date — in that case we must NOT flash the "checked your numbers" trust badge and
+        // must NOT write the empty number back into the shared context (CONTRACT-001 / CONTRACT-004).
+        const verdict = data.verdict;
+        const verified = !!(verdict && verdict.new_zero_balance_date);
+        if (verified) applyDecideVerdict(verdict);
         setMessages((m) => [
           ...m,
-          { role: "assistant", text: data.reply, toolCalled: !!data.tool_called },
+          {
+            role: "assistant",
+            text: data.reply,
+            toolCalled: !!data.tool_called && verified,
+            error: !!data.tool_called && !verified,
+          },
         ]);
       }
-    } catch {
+    } catch (err) {
+      const timedOut = err instanceof DOMException && err.name === "AbortError";
       setMessages((m) => [
         ...m,
         {
           role: "assistant",
-          text: "Couldn't reach the DECIDE service. Check your connection and try again.",
+          text: timedOut
+            ? "This is taking longer than expected — the affordability service didn't respond in time. Please try again in a moment."
+            : "Couldn't reach the DECIDE service. Check your connection and try again.",
           error: true,
         },
       ]);
     } finally {
+      clearTimeout(abortTimer);
       if (slowTimer.current) clearTimeout(slowTimer.current);
       setSlow(false);
       setLoading(false);

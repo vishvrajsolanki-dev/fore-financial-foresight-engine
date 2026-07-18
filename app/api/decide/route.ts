@@ -38,6 +38,28 @@ interface DecideVerdict {
   affordable: boolean;
 }
 
+// Optional prior conversation turns the UI sends so contextual follow-ups ("what about ₹5,000
+// instead?") resolve the right item. Backward compatible: absent history == single-message request,
+// so TASK-005's original curl test is unaffected.
+interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+function sanitizeHistory(raw: unknown): ChatTurn[] {
+  if (!Array.isArray(raw)) return [];
+  const turns: ChatTurn[] = [];
+  for (const t of raw) {
+    const role = t?.role;
+    const content = t?.content;
+    if ((role === "user" || role === "assistant") && typeof content === "string" && content.trim()) {
+      turns.push({ role, content });
+    }
+  }
+  // Keep the recent tail bounded so payload/token use stays sane on a long chat.
+  return turns.slice(-8);
+}
+
 // --- Keyless fallback: still honours the contract (real canIAfford call), just without the LLM. ---
 // Unit suffixes are matched only as whole tokens (k/thousand/lakh/cr), so the "l" in "laptop"
 // is never mistaken for "lakh". Amount is capped to a sane ceiling.
@@ -61,8 +83,12 @@ function parseAmount(message: string): number | null {
   return n;
 }
 
-const FILLER_ITEM_RE =
-  /^(instead|please|now|today|this|that|it|one|ones|month|week|year)$/i;
+// Words that can slip into the item capture group but are not real purchases — treat them as "no
+// item named", so a follow-up like "what about ₹5,000 instead?" falls back to the carried-over item.
+const NON_ITEM_WORDS = new Set([
+  "instead", "now", "today", "then", "again", "please", "one", "ones", "it", "that", "this",
+  "something", "else", "more", "less", "much", "expense", "this expense", "month", "week", "year",
+]);
 
 function clean(item: string): string {
   const cleaned = item
@@ -70,7 +96,7 @@ function clean(item: string): string {
     .replace(TRAILING_FILLER_RE, "")
     .replace(/[.?!,]+$/, "")
     .trim();
-  if (!cleaned || FILLER_ITEM_RE.test(cleaned)) return "this expense";
+  if (!cleaned || NON_ITEM_WORDS.has(cleaned.toLowerCase())) return "this expense";
   return cleaned;
 }
 
@@ -88,10 +114,34 @@ function guessItem(message: string): string {
   return "this expense";
 }
 
-async function fallbackDecide(message: string, transactions: Transaction[]) {
+// Look back through prior USER turns for the most recently named item, so a bare follow-up like
+// "what about ₹5,000 instead?" still knows it's about the laptop (handout Testing & Verification #4).
+function priorItemFromHistory(history: ChatTurn[]): string | null {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].role !== "user") continue;
+    const guessed = guessItem(history[i].content);
+    if (guessed !== "this expense") return guessed;
+  }
+  return null;
+}
+
+async function fallbackDecide(
+  message: string,
+  transactions: Transaction[],
+  history: ChatTurn[]
+) {
   const amount = parseAmount(message);
   const hasIntent = AFFORD_INTENT_RE.test(message);
-  if (amount === null || !hasIntent) {
+  let item = guessItem(message);
+  // Contextual follow-up: amount present but no item named this turn -> reuse the last one.
+  if (item === "this expense") {
+    const prior = priorItemFromHistory(history);
+    if (prior) item = prior;
+  }
+  // Treat as an affordability query when we have an amount AND either an explicit intent word or a
+  // known item (named now or carried over from the conversation).
+  const isAffordQuery = amount !== null && (hasIntent || item !== "this expense");
+  if (!isAffordQuery) {
     return NextResponse.json({
       reply:
         "Hi! Ask me something like \"Can I afford a ₹15,000 laptop next month?\" and I'll run the " +
@@ -101,12 +151,12 @@ async function fallbackDecide(message: string, transactions: Transaction[]) {
       note: "GROQ_API_KEY not set — using deterministic fallback (still calls the real canIAfford function).",
     });
   }
-  const item = guessItem(message);
-  const out = await canIAfford({ item, amount, transactions });
+  const resolvedAmount = amount as number;
+  const out = await canIAfford({ item, amount: resolvedAmount, transactions });
   return NextResponse.json({
     reply: out.explanation,
     tool_called: true,
-    verdict: toVerdict(item, amount, out),
+    verdict: toVerdict(item, resolvedAmount, out),
     note: "GROQ_API_KEY not set — used deterministic fallback; affordability numbers are still real.",
   });
 }
@@ -125,6 +175,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const message: unknown = body?.message;
   const transactions: Transaction[] = Array.isArray(body?.transactions) ? body.transactions : [];
+  const history = sanitizeHistory(body?.history);
 
   if (!message || typeof message !== "string") {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
@@ -138,13 +189,14 @@ export async function POST(req: NextRequest) {
 
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return fallbackDecide(message, transactions);
+    return fallbackDecide(message, transactions, history);
   }
 
   try {
     const groq = new Groq({ apiKey });
     const messages: Groq.Chat.ChatCompletionMessageParam[] = [
       { role: "system", content: SYSTEM_PROMPT },
+      ...history.map((t) => ({ role: t.role, content: t.content })),
       { role: "user", content: message },
     ];
 
