@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from burn_rate import compute_burn_rate
+from can_i_afford import can_i_afford
 from classify import classify
 
 app = FastAPI(title="FORE ML Service")
@@ -84,6 +85,17 @@ def burn_rate_endpoint(body: BurnRateRequest):
     return compute_burn_rate([txn.model_dump() for txn in body.transactions])
 
 
-# TODO(TASK-007): mount /can-i-afford (CONTRACT-004) endpoint, implemented in can_i_afford.py,
-#   reusing burn_rate.py's regressor with the hypothetical expense inserted — no second
-#   regression path.
+class CanIAffordRequest(BaseModel):
+    item: str
+    amount: float
+    transactions: list[Transaction] = Field(min_length=1)
+
+
+# CONTRACT-004 — canIAfford real math (TASK-007). Reuses compute_burn_rate; no second regressor.
+@app.post("/can-i-afford")
+def can_i_afford_endpoint(body: CanIAffordRequest):
+    return can_i_afford(
+        body.item,
+        body.amount,
+        [txn.model_dump() for txn in body.transactions],
+    )
