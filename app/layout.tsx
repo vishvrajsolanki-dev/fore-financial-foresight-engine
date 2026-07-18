@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ThemeGuard from "@/components/ThemeGuard";
 import { FinancialContextProvider } from "@/lib/context/FinancialContextProvider";
 
 export const metadata: Metadata = {
@@ -14,8 +15,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="light">
+    <html lang="en">
       <body>
+        <ThemeGuard />
         <FinancialContextProvider>{children}</FinancialContextProvider>
       </body>
     </html>

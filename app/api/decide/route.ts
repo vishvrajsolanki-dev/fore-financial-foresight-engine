@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
 import { features } from "@/lib/features";
+import { formatDecideReply } from "@/lib/decide/formatReply";
 import {
   canIAffordToolDefinition,
   canIAfford,
@@ -15,14 +16,15 @@ export const dynamic = "force-dynamic";
 const MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 const CRITIC_MODEL = process.env.GROQ_CRITIC_MODEL || "llama-3.1-8b-instant";
 
-const SYSTEM_PROMPT = `You are FORE's DECIDE assistant, a grounded personal-finance helper.
-When the user asks whether they can afford a purchase or expense (anything with a rupee amount or
-a clear item to buy), you MUST call the canIAfford tool and base your entire answer ONLY on its
-returned values (affordable, day_shift, new_zero_balance_date, explanation). Never invent or state
-a day-shift, date, or affordability judgement yourself — only report what the tool returns.
-For greetings or messages that are not about affording something, reply briefly and do NOT call the
-tool. When answering follow-ups about goals, archetype, or peer spending, use ONLY the financial
-context JSON provided below — never invent numbers. Keep answers concise and friendly.`;
+const SYSTEM_PROMPT = `You are FORE's DECIDE assistant — a precise personal-finance advisor.
+When the user asks about affording a purchase, you MUST call canIAfford and base your answer ONLY on tool output.
+Structure affordability answers in three parts:
+1) Clear verdict (Yes / Not right now)
+2) Key numbers (amount, day_shift, new_zero_balance_date, daily burn if in context)
+3) One concrete recommendation (timing, category to trim, or link to savings goal)
+For greetings, reply warmly in 1–2 sentences and suggest an affordability question.
+For goal, archetype, or benchmark questions, cite ONLY values from financial_context JSON — never invent numbers.
+Be specific and actionable; avoid vague phrases like "be careful" without numbers.`;
 
 function buildSystemPrompt(financialContext: Partial<FinancialContext> | null): string {
   if (!financialContext) return SYSTEM_PROMPT;
@@ -150,7 +152,7 @@ async function fallbackDecide(
   const resolvedAmount = amount as number;
   const out = await canIAfford({ item, amount: resolvedAmount, transactions });
   return NextResponse.json({
-    reply: out.explanation,
+    reply: formatDecideReply(out.explanation, toVerdict(item, resolvedAmount, out), null, out.explanation),
     tool_called: true,
     verdict: toVerdict(item, resolvedAmount, out),
     verified: true,
@@ -295,11 +297,13 @@ export async function POST(req: NextRequest) {
     }
 
     messages.push(choice);
+    let toolExplanation = "";
     let verdict: DecideVerdict | null = null;
     for (const call of toolCalls) {
       if (call.function.name !== "canIAfford") continue;
       const { item, amount } = parseToolArgs(call.function.arguments || "{}");
       const out = await canIAfford({ item, amount, transactions });
+      toolExplanation = out.explanation;
       verdict = toVerdict(item, amount, out);
       messages.push({
         role: "tool",
@@ -314,7 +318,8 @@ export async function POST(req: NextRequest) {
       temperature: 0.2,
     });
 
-    const reply = second.choices[0].message.content ?? verdict?.new_zero_balance_date ?? "";
+    const rawReply = second.choices[0].message.content ?? toolExplanation;
+    const reply = formatDecideReply(rawReply, verdict, financialContext, toolExplanation);
     const verified = await selfVerifyReply(groq, reply, verdict);
 
     return NextResponse.json({

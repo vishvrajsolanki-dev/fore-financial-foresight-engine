@@ -12,6 +12,7 @@ import {
   useFinancialContext,
 } from "@/lib/context/FinancialContextProvider";
 import { features } from "@/lib/features";
+import { buildGoalInsight } from "@/lib/ahead/insights";
 import { exportAheadSummaryPng } from "@/lib/export/aheadSummary";
 import { formatMoney } from "@/lib/format/currency";
 
@@ -45,6 +46,8 @@ export default function GoalPanel() {
           return goal.pace_gap_days - baseline.pace_gap_days;
         })()
       : null;
+
+  const insight = buildGoalInsight(ctx, currency);
 
   return (
     <div className="card">
@@ -115,15 +118,50 @@ export default function GoalPanel() {
         </p>
       )}
 
-      {goal && !pastDate && (
+      {goal && !pastDate && insight && (
+        <div className="mt-4 grid gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`pill ${goal.on_pace ? "pill-success" : "pill-warn"}`}>
+              {goal.on_pace ? "On pace" : "Behind pace"}
+            </span>
+            <span className="muted text-sm">
+              Target {inr(goal.target_amount, currency)} by {goal.target_date}
+            </span>
+          </div>
+
+          <div className="insight-box">
+            <p className="font-semibold text-sm">{insight.headline}</p>
+            <p className="muted mt-1 text-sm leading-relaxed">{insight.detail}</p>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {insight.stats.map((s) => (
+              <div key={s.label} className="stat-tile">
+                <p className="muted text-xs">{s.label}</p>
+                <p className="mt-0.5 font-semibold text-sm">{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {verdict && goalImpactDays != null && goalImpactDays > 0 && (
+            <p className="text-sm" style={{ color: "var(--warn)" }}>
+              After {verdict.item} ({inr(verdict.amount, currency)}), you&apos;re about {goalImpactDays}{" "}
+              day{goalImpactDays === 1 ? "" : "s"} further from this goal — pace above includes ≈
+              {inr(purchaseDailyBurn(verdict.amount) * 30, currency)}/mo extra burn.
+            </p>
+          )}
+        </div>
+      )}
+
+      {goal && !pastDate && !insight && (
         <div className="mt-4 grid gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className="pill"
               style={
                 goal.on_pace
-                  ? { color: "var(--accent-2)", borderColor: "rgba(52,211,153,.4)", background: "rgba(52,211,153,.12)" }
-                  : { color: "var(--danger)", borderColor: "rgba(248,113,113,.4)", background: "rgba(248,113,113,.12)" }
+                  ? { color: "var(--accent-2)", borderColor: "rgba(46,125,91,.35)", background: "rgba(46,125,91,.1)" }
+                  : { color: "var(--danger)", borderColor: "rgba(201,58,43,.35)", background: "rgba(201,58,43,.08)" }
               }
             >
               {goal.on_pace ? "On pace" : "Behind pace"}
@@ -139,13 +177,6 @@ export default function GoalPanel() {
                 ? `You're on track — about ${Math.abs(goal.pace_gap_days)} day(s) of buffer at your current savings rate.`
                 : `You're roughly ${goal.pace_gap_days} day(s) behind at your current savings rate.`}
           </p>
-          {verdict && goalImpactDays != null && goalImpactDays > 0 && (
-            <p className="text-sm" style={{ color: "var(--warn)" }}>
-              After {verdict.item} ({inr(verdict.amount, currency)}), you&apos;re about {goalImpactDays} day
-              {goalImpactDays === 1 ? "" : "s"} further from this goal — the pace above already
-              includes that purchase (≈{inr(purchaseDailyBurn(verdict.amount) * 30, currency)}/mo extra burn).
-            </p>
-          )}
         </div>
       )}
 

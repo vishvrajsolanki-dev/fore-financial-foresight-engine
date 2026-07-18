@@ -4,6 +4,8 @@ import { encryptField, decryptField } from "../lib/security/encryption";
 import { signAccessToken, verifyAccessToken } from "../lib/auth/jwt";
 import { computeBenchmark } from "../lib/benchmark/computeBenchmark";
 import { computeGoal, purchaseDailyBurn } from "../lib/context/FinancialContextProvider";
+import { formatDecideReply } from "../lib/decide/formatReply";
+import { buildGoalInsight, buildBenchmarkInsights } from "../lib/ahead/insights";
 import priya from "../data/personas/persona-priya.json";
 
 async function main() {
@@ -32,6 +34,41 @@ async function main() {
 
   if (purchaseDailyBurn(15000) !== 500) throw new Error("purchaseDailyBurn");
   if (inferIncomeBracket(65000) !== "50k-75k") throw new Error("income bracket");
+
+  const reply = formatDecideReply("", {
+    item: "laptop",
+    amount: 15000,
+    day_shift: 12,
+    new_zero_balance_date: "2026-11-01",
+    affordable: true,
+  }, { monthly_income: 70000, burn_rate: { daily_avg: 800, trend_slope: -50, projected_zero_balance_date: "2026-12-01" } });
+  if (!reply.includes("laptop") || !reply.includes("15,000")) throw new Error("formatDecideReply");
+
+  const insight = buildGoalInsight({
+    session_id: "x",
+    persona: "test",
+    monthly_income: 70000,
+    archetype: null,
+    burn_rate: { daily_avg: 800, trend_slope: -50, projected_zero_balance_date: "2026-12-01" },
+    transactions: [],
+    goal: { target_amount: 50000, target_date: "2026-12-31", on_pace: true, pace_gap_days: 10 },
+    last_decide_verdict: null,
+    benchmark: null,
+  });
+  if (!insight?.headline.includes("pace")) throw new Error("buildGoalInsight");
+
+  const benchInsights = buildBenchmarkInsights({
+    session_id: "x",
+    persona: "test",
+    monthly_income: 70000,
+    archetype: null,
+    burn_rate: null,
+    transactions: [],
+    goal: null,
+    last_decide_verdict: null,
+    benchmark: [{ category: "dining", user_value: 5000, percentile: 80 }],
+  });
+  if (!benchInsights[0]?.insight.includes("dining")) throw new Error("buildBenchmarkInsights");
 
   console.log("  All unit checks OK");
 }
