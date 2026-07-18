@@ -1,11 +1,770 @@
 {
-  "_note": "Placeholder shell. TASK-004 (Vishvraj + Kavya) generates the real static benchmark data here, covering all 5 income brackets x 3 city tiers, per CONTRACT-005 in docs/CONTRACTS.md. Generated once before the build starts, never live-generated during the demo.",
-  "income_bracket": "string",
-  "city_tier": "string",
-  "categories": [
+  "_note": "Static peer-benchmark data (CONTRACT-005). Generated once by scripts/generate_data.py, never at runtime. 5 income brackets x 3 city tiers, no gaps.",
+  "brackets": [
     {
-      "category": "string",
-      "percentiles": { "p25": 0, "p50": 0, "p75": 0, "p90": 0 }
+      "income_bracket": "0-25k",
+      "city_tier": "Tier 1",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 2000,
+            "p50": 3250,
+            "p75": 4500,
+            "p90": 6500
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 1000,
+            "p50": 2000,
+            "p75": 3500,
+            "p90": 6000
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 2500,
+            "p50": 4000,
+            "p75": 6000,
+            "p90": 9000
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 750,
+            "p50": 1500,
+            "p75": 2750,
+            "p90": 4500
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 1500,
+            "p50": 4000,
+            "p75": 7500,
+            "p90": 12500
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "0-25k",
+      "city_tier": "Tier 2",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 1600,
+            "p50": 2600,
+            "p75": 3600,
+            "p90": 5200
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 800,
+            "p50": 1600,
+            "p75": 2800,
+            "p90": 4800
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 2000,
+            "p50": 3200,
+            "p75": 4800,
+            "p90": 7200
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 600,
+            "p50": 1200,
+            "p75": 2200,
+            "p90": 3600
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 1200,
+            "p50": 3200,
+            "p75": 6000,
+            "p90": 10000
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "0-25k",
+      "city_tier": "Tier 3",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 1240,
+            "p50": 2015,
+            "p75": 2790,
+            "p90": 4030
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 620,
+            "p50": 1240,
+            "p75": 2170,
+            "p90": 3720
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 1550,
+            "p50": 2480,
+            "p75": 3720,
+            "p90": 5580
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 465,
+            "p50": 930,
+            "p75": 1705,
+            "p90": 2790
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 930,
+            "p50": 2480,
+            "p75": 4650,
+            "p90": 7750
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "25k-50k",
+      "city_tier": "Tier 1",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 3000,
+            "p50": 4875,
+            "p75": 6750,
+            "p90": 9750
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 1500,
+            "p50": 3000,
+            "p75": 5250,
+            "p90": 9000
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 3750,
+            "p50": 6000,
+            "p75": 9000,
+            "p90": 13500
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 1125,
+            "p50": 2250,
+            "p75": 4125,
+            "p90": 6750
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 2250,
+            "p50": 6000,
+            "p75": 11250,
+            "p90": 18750
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "25k-50k",
+      "city_tier": "Tier 2",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 2400,
+            "p50": 3900,
+            "p75": 5400,
+            "p90": 7800
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 1200,
+            "p50": 2400,
+            "p75": 4200,
+            "p90": 7200
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 3000,
+            "p50": 4800,
+            "p75": 7200,
+            "p90": 10800
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 900,
+            "p50": 1800,
+            "p75": 3300,
+            "p90": 5400
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 1800,
+            "p50": 4800,
+            "p75": 9000,
+            "p90": 15000
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "25k-50k",
+      "city_tier": "Tier 3",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 1860,
+            "p50": 3022,
+            "p75": 4185,
+            "p90": 6045
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 930,
+            "p50": 1860,
+            "p75": 3255,
+            "p90": 5580
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 2325,
+            "p50": 3720,
+            "p75": 5580,
+            "p90": 8370
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 698,
+            "p50": 1395,
+            "p75": 2558,
+            "p90": 4185
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 1395,
+            "p50": 3720,
+            "p75": 6975,
+            "p90": 11625
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "50k-75k",
+      "city_tier": "Tier 1",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 4000,
+            "p50": 6500,
+            "p75": 9000,
+            "p90": 13000
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 2000,
+            "p50": 4000,
+            "p75": 7000,
+            "p90": 12000
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 5000,
+            "p50": 8000,
+            "p75": 12000,
+            "p90": 18000
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 1500,
+            "p50": 3000,
+            "p75": 5500,
+            "p90": 9000
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 3000,
+            "p50": 8000,
+            "p75": 15000,
+            "p90": 25000
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "50k-75k",
+      "city_tier": "Tier 2",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 3200,
+            "p50": 5200,
+            "p75": 7200,
+            "p90": 10400
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 1600,
+            "p50": 3200,
+            "p75": 5600,
+            "p90": 9600
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 4000,
+            "p50": 6400,
+            "p75": 9600,
+            "p90": 14400
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 1200,
+            "p50": 2400,
+            "p75": 4400,
+            "p90": 7200
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 2400,
+            "p50": 6400,
+            "p75": 12000,
+            "p90": 20000
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "50k-75k",
+      "city_tier": "Tier 3",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 2480,
+            "p50": 4030,
+            "p75": 5580,
+            "p90": 8060
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 1240,
+            "p50": 2480,
+            "p75": 4340,
+            "p90": 7440
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 3100,
+            "p50": 4960,
+            "p75": 7440,
+            "p90": 11160
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 930,
+            "p50": 1860,
+            "p75": 3410,
+            "p90": 5580
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 1860,
+            "p50": 4960,
+            "p75": 9300,
+            "p90": 15500
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "75k-100k",
+      "city_tier": "Tier 1",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 5400,
+            "p50": 8775,
+            "p75": 12150,
+            "p90": 17550
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 2700,
+            "p50": 5400,
+            "p75": 9450,
+            "p90": 16200
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 6750,
+            "p50": 10800,
+            "p75": 16200,
+            "p90": 24300
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 2025,
+            "p50": 4050,
+            "p75": 7425,
+            "p90": 12150
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 4050,
+            "p50": 10800,
+            "p75": 20250,
+            "p90": 33750
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "75k-100k",
+      "city_tier": "Tier 2",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 4320,
+            "p50": 7020,
+            "p75": 9720,
+            "p90": 14040
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 2160,
+            "p50": 4320,
+            "p75": 7560,
+            "p90": 12960
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 5400,
+            "p50": 8640,
+            "p75": 12960,
+            "p90": 19440
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 1620,
+            "p50": 3240,
+            "p75": 5940,
+            "p90": 9720
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 3240,
+            "p50": 8640,
+            "p75": 16200,
+            "p90": 27000
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "75k-100k",
+      "city_tier": "Tier 3",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 3348,
+            "p50": 5441,
+            "p75": 7533,
+            "p90": 10881
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 1674,
+            "p50": 3348,
+            "p75": 5859,
+            "p90": 10044
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 4185,
+            "p50": 6696,
+            "p75": 10044,
+            "p90": 15066
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 1256,
+            "p50": 2511,
+            "p75": 4604,
+            "p90": 7533
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 2511,
+            "p50": 6696,
+            "p75": 12555,
+            "p90": 20925
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "100k+",
+      "city_tier": "Tier 1",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 7200,
+            "p50": 11700,
+            "p75": 16200,
+            "p90": 23400
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 3600,
+            "p50": 7200,
+            "p75": 12600,
+            "p90": 21600
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 9000,
+            "p50": 14400,
+            "p75": 21600,
+            "p90": 32400
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 2700,
+            "p50": 5400,
+            "p75": 9900,
+            "p90": 16200
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 5400,
+            "p50": 14400,
+            "p75": 27000,
+            "p90": 45000
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "100k+",
+      "city_tier": "Tier 2",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 5760,
+            "p50": 9360,
+            "p75": 12960,
+            "p90": 18720
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 2880,
+            "p50": 5760,
+            "p75": 10080,
+            "p90": 17280
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 7200,
+            "p50": 11520,
+            "p75": 17280,
+            "p90": 25920
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 2160,
+            "p50": 4320,
+            "p75": 7920,
+            "p90": 12960
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 4320,
+            "p50": 11520,
+            "p75": 21600,
+            "p90": 36000
+          }
+        }
+      ]
+    },
+    {
+      "income_bracket": "100k+",
+      "city_tier": "Tier 3",
+      "categories": [
+        {
+          "category": "food",
+          "percentiles": {
+            "p25": 4464,
+            "p50": 7254,
+            "p75": 10044,
+            "p90": 14508
+          }
+        },
+        {
+          "category": "shopping",
+          "percentiles": {
+            "p25": 2232,
+            "p50": 4464,
+            "p75": 7812,
+            "p90": 13392
+          }
+        },
+        {
+          "category": "bills",
+          "percentiles": {
+            "p25": 5580,
+            "p50": 8928,
+            "p75": 13392,
+            "p90": 20088
+          }
+        },
+        {
+          "category": "entertainment",
+          "percentiles": {
+            "p25": 1674,
+            "p50": 3348,
+            "p75": 6138,
+            "p90": 10044
+          }
+        },
+        {
+          "category": "savings",
+          "percentiles": {
+            "p25": 3348,
+            "p50": 8928,
+            "p75": 16740,
+            "p90": 27900
+          }
+        }
+      ]
     }
   ]
 }
