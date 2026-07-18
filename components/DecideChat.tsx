@@ -82,10 +82,21 @@ export default function DecideChat() {
           { role: "assistant", text: data.error || "Something went wrong.", error: true },
         ]);
       } else {
-        if (data.verdict) applyDecideVerdict(data.verdict);
+        // A verdict is only trustworthy if the tool actually returned a real projection. If the
+        // calculation service was unreachable the route still replies (graceful, no crash) but with
+        // an empty date — in that case we must NOT flash the "checked your numbers" trust badge and
+        // must NOT write the empty number back into the shared context (CONTRACT-001 / CONTRACT-004).
+        const verdict = data.verdict;
+        const verified = !!(verdict && verdict.new_zero_balance_date);
+        if (verified) applyDecideVerdict(verdict);
         setMessages((m) => [
           ...m,
-          { role: "assistant", text: data.reply, toolCalled: !!data.tool_called },
+          {
+            role: "assistant",
+            text: data.reply,
+            toolCalled: !!data.tool_called && verified,
+            error: !!data.tool_called && !verified,
+          },
         ]);
       }
     } catch (err) {
