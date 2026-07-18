@@ -8,6 +8,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AuthNav from "@/components/AuthNav";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 const TABS = [
@@ -25,7 +26,7 @@ export default function FacesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { personas, activeId, ctx, selectPersona } = useFinancialContext();
+  const { personas, activeId, ctx, selectPersona, fullStackEnabled, authUser } = useFinancialContext();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6">
@@ -41,7 +42,8 @@ export default function FacesLayout({
               guess.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <AuthNav />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <label htmlFor="persona" className="muted text-sm whitespace-nowrap">
               Demo persona
             </label>
@@ -100,7 +102,9 @@ export default function FacesLayout({
           <div className="card py-12 text-center">
             <p className="text-lg font-medium">Select a demo persona to begin</p>
             <p className="muted mt-1">
-              Each persona has ~120 real-shaped transactions across 3 months.
+              {fullStackEnabled
+                ? "Select a demo persona or upload your bank CSV on PAST."
+                : "Each persona has ~120 real-shaped transactions across 3 months."}
             </p>
           </div>
         ) : (

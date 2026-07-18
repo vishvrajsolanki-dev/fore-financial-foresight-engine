@@ -1,8 +1,5 @@
 // FORE — lib/context/FinancialContextProvider.tsx
-// The shared data spine (CONTRACT-001) made reactive for the browser demo. All three faces read
-// and write the SAME financial_context here, so PAST, DECIDE and AHEAD stay in sync — the "one
-// system, not three screens" property. Rule (CONTRACT-001): no face displays a number without
-// writing it back here first.
+// Shared data spine (CONTRACT-001). Demo mode: client-only. Full-stack mode: PostgreSQL + JWT sync.
 
 "use client";
 
@@ -10,6 +7,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -22,15 +20,31 @@ import type { FinancialContext } from "@/types/financialContext";
 
 type DecideVerdict = NonNullable<FinancialContext["last_decide_verdict"]>;
 
+export interface AuthUser {
+  id: string;
+  email: string;
+}
+
+export interface CsvUploadMeta {
+  rowCount: number;
+  skippedRows: number;
+  detectedFormat: string;
+  warnings: string[];
+}
+
 interface FinancialContextValue {
   personas: PersonaSeed[];
   activeId: string | null;
   ctx: FinancialContext | null;
   pastLoading: boolean;
   pastError: string | null;
+  fullStackEnabled: boolean;
+  authUser: AuthUser | null;
   selectPersona: (sessionId: string) => Promise<void>;
   setGoal: (targetAmount: number, targetDate: string) => void;
   applyDecideVerdict: (verdict: DecideVerdict) => void;
+  uploadCsv: (file: File, monthlyIncome: number, cityTier: string) => Promise<CsvUploadMeta>;
+  logout: () => Promise<void>;
 }
 
 const Ctx = createContext<FinancialContextValue | null>(null);
@@ -49,7 +63,6 @@ function baseContext(seed: PersonaSeed): FinancialContext {
   };
 }
 
-/** Amortize a one-time purchase over 30 days as extra daily burn for goal-pace math. */
 export function purchaseDailyBurn(amount: number): number {
   return amount / 30;
 }
@@ -83,15 +96,44 @@ export function computeGoal(
   };
 }
 
+async function persistContext(patch: {
+  goal?: FinancialContext["goal"];
+  last_decide_verdict?: FinancialContext["last_decide_verdict"];
+  burn_rate?: FinancialContext["burn_rate"];
+}) {
+  await fetch("/api/context", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(patch),
+  });
+}
+
 export function FinancialContextProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ctx, setCtx] = useState<FinancialContext | null>(null);
   const [pastLoading, setPastLoading] = useState(false);
   const [pastError, setPastError] = useState<string | null>(null);
+  const [fullStackEnabled, setFullStackEnabled] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
 
-  const selectPersona = useCallback(async (sessionId: string) => {
-    const seed = getPersona(sessionId);
-    if (!seed) return;
+  useEffect(() => {
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        setFullStackEnabled(!!data.database);
+        if (data.authenticated && data.user) {
+          setAuthUser(data.user);
+          if (data.context) {
+            setCtx(data.context);
+            setActiveId(data.context.session_id);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const loadClientPersona = useCallback(async (sessionId: string, seed: PersonaSeed) => {
     const base = baseContext(seed);
     setActiveId(sessionId);
     setCtx(base);
@@ -106,12 +148,7 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       );
       setCtx((prev) =>
         prev && prev.session_id === sessionId
-          ? {
-              ...prev,
-              archetype: past.archetype,
-              burn_rate: past.burn_rate,
-              benchmark,
-            }
+          ? { ...prev, archetype: past.archetype, burn_rate: past.burn_rate, benchmark }
           : prev
       );
     } catch (err) {
@@ -121,41 +158,123 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
     }
   }, []);
 
-  const setGoal = useCallback((targetAmount: number, targetDate: string) => {
-    setCtx((prev) => {
-      if (!prev) return prev;
-      const dailyAvg = prev.burn_rate?.daily_avg ?? 0;
-      return { ...prev, goal: computeGoal(targetAmount, targetDate, prev.monthly_income, dailyAvg) };
-    });
-  }, []);
+  const selectPersona = useCallback(
+    async (sessionId: string) => {
+      const seed = getPersona(sessionId);
+      if (!seed) return;
 
-  const applyDecideVerdict = useCallback((verdict: DecideVerdict) => {
-    setCtx((prev) => {
-      if (!prev) return prev;
-      const stored: DecideVerdict = {
-        item: verdict.item,
-        amount: verdict.amount,
-        day_shift: verdict.day_shift,
-        new_zero_balance_date: verdict.new_zero_balance_date,
-      };
-      const burn_rate = prev.burn_rate
-        ? { ...prev.burn_rate, projected_zero_balance_date: verdict.new_zero_balance_date }
-        : prev.burn_rate;
-
-      // Recompute goal pace with the hypothetical purchase amortized as extra daily burn.
-      let goal = prev.goal;
-      if (goal && prev.burn_rate) {
-        const adjustedDailyAvg = prev.burn_rate.daily_avg + purchaseDailyBurn(verdict.amount);
-        goal = computeGoal(
-          goal.target_amount,
-          goal.target_date,
-          prev.monthly_income,
-          adjustedDailyAvg
-        );
+      if (fullStackEnabled && authUser) {
+        setPastLoading(true);
+        setPastError(null);
+        try {
+          const res = await fetch("/api/context/demo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ personaId: sessionId }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Failed to load persona");
+          setCtx(data.context);
+          setActiveId(data.context.session_id);
+        } catch (err) {
+          setPastError(err instanceof Error ? err.message : "Failed to load persona");
+        } finally {
+          setPastLoading(false);
+        }
+        return;
       }
 
-      return { ...prev, last_decide_verdict: stored, burn_rate, goal };
-    });
+      await loadClientPersona(sessionId, seed);
+    },
+    [authUser, fullStackEnabled, loadClientPersona]
+  );
+
+  const uploadCsv = useCallback(
+    async (file: File, monthlyIncome: number, cityTier: string): Promise<CsvUploadMeta> => {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("monthlyIncome", String(monthlyIncome));
+      form.append("cityTier", cityTier);
+      setPastLoading(true);
+      setPastError(null);
+      try {
+        const res = await fetch("/api/upload/csv", {
+          method: "POST",
+          body: form,
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+        setCtx(data.context);
+        setActiveId(data.context.session_id);
+        return data.meta as CsvUploadMeta;
+      } finally {
+        setPastLoading(false);
+      }
+    },
+    []
+  );
+
+  const setGoal = useCallback(
+    (targetAmount: number, targetDate: string) => {
+      setCtx((prev) => {
+        if (!prev) return prev;
+        const dailyAvg = prev.burn_rate?.daily_avg ?? 0;
+        const goal = computeGoal(targetAmount, targetDate, prev.monthly_income, dailyAvg);
+        if (fullStackEnabled && authUser) {
+          void persistContext({ goal });
+        }
+        return { ...prev, goal };
+      });
+    },
+    [authUser, fullStackEnabled]
+  );
+
+  const applyDecideVerdict = useCallback(
+    (verdict: DecideVerdict) => {
+      setCtx((prev) => {
+        if (!prev) return prev;
+        const stored: DecideVerdict = {
+          item: verdict.item,
+          amount: verdict.amount,
+          day_shift: verdict.day_shift,
+          new_zero_balance_date: verdict.new_zero_balance_date,
+        };
+        const burn_rate = prev.burn_rate
+          ? { ...prev.burn_rate, projected_zero_balance_date: verdict.new_zero_balance_date }
+          : prev.burn_rate;
+
+        let goal = prev.goal;
+        if (goal && prev.burn_rate) {
+          const adjustedDailyAvg = prev.burn_rate.daily_avg + purchaseDailyBurn(verdict.amount);
+          goal = computeGoal(
+            goal.target_amount,
+            goal.target_date,
+            prev.monthly_income,
+            adjustedDailyAvg
+          );
+        }
+
+        if (fullStackEnabled && authUser) {
+          void persistContext({
+            last_decide_verdict: stored,
+            burn_rate: burn_rate ?? undefined,
+            goal: goal ?? undefined,
+          });
+        }
+
+        return { ...prev, last_decide_verdict: stored, burn_rate, goal };
+      });
+    },
+    [authUser, fullStackEnabled]
+  );
+
+  const logout = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setAuthUser(null);
+    setCtx(null);
+    setActiveId(null);
   }, []);
 
   const value = useMemo<FinancialContextValue>(
@@ -165,11 +284,27 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       ctx,
       pastLoading,
       pastError,
+      fullStackEnabled,
+      authUser,
       selectPersona,
       setGoal,
       applyDecideVerdict,
+      uploadCsv,
+      logout,
     }),
-    [activeId, ctx, pastLoading, pastError, selectPersona, setGoal, applyDecideVerdict]
+    [
+      activeId,
+      ctx,
+      pastLoading,
+      pastError,
+      fullStackEnabled,
+      authUser,
+      selectPersona,
+      setGoal,
+      applyDecideVerdict,
+      uploadCsv,
+      logout,
+    ]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

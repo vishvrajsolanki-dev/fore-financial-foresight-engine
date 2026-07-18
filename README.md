@@ -2,7 +2,7 @@
 
 Cursor Hackathon Ahmedabad · "AI for Everyday Experiences"
 
-**Product spec:** [docs/FORE_Blueprint.md](docs/FORE_Blueprint.md) is the canonical blueprint. An earlier FORE Blueprint 2 spec proposed JWT auth and PostgreSQL — those were deliberately **not** built; see [docs/FORE_Blueprint_2_SUPERSEDED.md](docs/FORE_Blueprint_2_SUPERSEDED.md) and [docs/ROADMAP.md](docs/ROADMAP.md) Tier 3.
+**Product spec:** [docs/FORE_Blueprint.md](docs/FORE_Blueprint.md) (hackathon demo) · [FORE Blueprint 2 full-stack](docs/SECURITY.md) (JWT + PostgreSQL + real bank CSV when `DATABASE_URL` is set)
 
 One platform, three linked faces on a shared data spine:
 
@@ -23,11 +23,17 @@ One platform, three linked faces on a shared data spine:
 
 ## Stack
 
+**Demo mode** (no `DATABASE_URL`): client-side context, synthetic personas, no auth.
+
+**Full-stack mode** (FORE Blueprint 2 — set `DATABASE_URL`):
+
 ```
-Frontend/BE  : Next.js 14 App Router, TypeScript, Tailwind CSS + shadcn/ui, Recharts — on Vercel
-ML service   : Python (FastAPI) — on Render, always-on instance (no cold starts on the demo path)
+Frontend/BE  : Next.js 14 App Router, TypeScript, Tailwind, Recharts — on Vercel
+Auth         : JWT (15 min access) + revocable refresh tokens (7 days), bcrypt passwords, httpOnly cookies
+Database     : PostgreSQL via Prisma — users, sessions, encrypted transactions
+ML service   : Python (FastAPI) — on Render, always-on instance
 Chat/LLM     : Groq API + Llama 3.1, real tool-calling
-State        : In-memory financial_context object — no database, no auth (see docs/ for why)
+Bank CSV     : HDFC/ICICI/SBI-style column auto-detection; raw CSV never stored (see docs/SECURITY.md)
 ```
 
 ## Repo structure
@@ -46,19 +52,24 @@ docs/                   Full STARK planning set — team brief, contracts, roadm
 
 ## Running locally
 
-Two processes: the Python ML service (Render target) and the Next.js app (Vercel target).
+### Demo mode (no database)
 
 ```bash
-# 1. ML service (FastAPI) — terminal 1
-cd ml-service
-python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
-./.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
-
-# 2. Next.js app — terminal 2 (points at the ML service via RENDER_ML_BASE_URL)
-npm install
-RENDER_ML_BASE_URL=http://127.0.0.1:8000 npm run dev
-# open http://localhost:3000 → select a demo persona
+cd ml-service && python3 -m uvicorn main:app --port 8000   # terminal 1
+npm install && RENDER_ML_BASE_URL=http://127.0.0.1:8000 npm run dev   # terminal 2
 ```
+
+### Full-stack mode (JWT + PostgreSQL + bank CSV)
+
+```bash
+cp .env.example .env.local
+# Set DATABASE_URL, JWT_ACCESS_SECRET, DATA_ENCRYPTION_KEY
+
+npx prisma db push
+npm run dev
+```
+
+Register at `/register`, then upload a bank CSV on **PAST** or pick a demo persona.
 
 Copy `.env.example` to `.env.local` and set `GROQ_API_KEY` to enable real Llama tool-calling on
 DECIDE. Without a key, DECIDE uses a deterministic fallback that **still calls the real

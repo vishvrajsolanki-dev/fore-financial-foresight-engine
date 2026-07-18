@@ -4,21 +4,29 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
     "verify": "python3 scripts/verify_task004.py",
     "smoke": "python3 scripts/smoke_demo_spine.py",
     "test:ml": "cd ml-service && python3 -m pytest -q"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3",
     "groq-sdk": "0.7.0",
+    "jose": "^6.2.3",
     "next": "14.2.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "recharts": "2.12.7"
+    "recharts": "2.12.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "20.14.15",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
@@ -26,6 +34,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
     "postcss": "8.4.41",
+    "prisma": "^5.22.0",
     "tailwindcss": "3.4.9",
     "typescript": "5.5.4"
   }

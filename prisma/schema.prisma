@@ -1,0 +1,77 @@
+// FORE — PostgreSQL schema (FORE_Blueprint 2 §7)
+// User-scoped financial sessions; refresh tokens stored server-side for revocation.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+  sessions      FinancialSession[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique @map("token_hash")
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model FinancialSession {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  persona            String?
+  monthlyIncome      Float    @map("monthly_income")
+  incomeBracket      String   @map("income_bracket")
+  cityTier           String   @map("city_tier")
+  dataSource         String   @default("demo") @map("data_source") // demo | csv
+  csvFileName        String?  @map("csv_file_name")
+  archetypeLabel     String?  @map("archetype_label")
+  archetypeDistances Json?    @map("archetype_distances")
+  burnRate           Json?    @map("burn_rate")
+  benchmark          Json?    @map("benchmark")
+  goal               Json?    @map("goal")
+  lastDecideVerdict  Json?    @map("last_decide_verdict")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  transactions Transaction[]
+
+  @@index([userId, isActive])
+  @@map("financial_sessions")
+}
+
+model Transaction {
+  id             String           @id @default(cuid())
+  sessionId      String           @map("session_id")
+  session        FinancialSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  date           String
+  category       String
+  amount         Float
+  descriptionEnc String?          @map("description_enc")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  @@index([sessionId, date])
+  @@map("transactions")
+}
