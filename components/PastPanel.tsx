@@ -1,15 +1,171 @@
 // FORE — components/PastPanel.tsx
-// Owner: TASK-002 (Drashti). Archetype label + radar chart (distances) + burn-rate line (Recharts).
-// Data source: lib/api/pastClient.ts — must go through that single module, never a direct fetch
-// here, so the PLACEHOLDER-A -> real swap at Checkpoint-1 stays a one-file change.
-// Edge case: no persona selected -> prompt state, must not crash.
+// Owner: TASK-002 (Drashti). Archetype label + radar chart (distances) + burn-rate + balance line.
+// Data source: lib/api/pastClient.ts via the shared context — never a direct fetch here, so the
+// PLACEHOLDER-A -> real swap stayed a one-file change.
 
 "use client";
 
+import { useMemo } from "react";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ReferenceLine,
+} from "recharts";
+
+import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
+
+function inr(n: number): string {
+  return "₹" + Math.round(n).toLocaleString("en-IN");
+}
+
 export default function PastPanel() {
-  // TODO(TASK-002): call getPastData() from lib/api/pastClient.ts, render:
-  //   - archetype.label
-  //   - Recharts radar chart over archetype.distances
-  //   - burn_rate line chart (daily_avg, trend_slope, projected_zero_balance_date)
-  return <div>PAST — TASK-002 not yet implemented</div>;
+  const { ctx, pastLoading, pastError } = useFinancialContext();
+
+  const radarData = useMemo(() => {
+    if (!ctx?.archetype) return [];
+    return Object.entries(ctx.archetype.distances).map(([label, distance]) => ({
+      label: label.replace(" ", "\n"),
+      closeness: Number((1 / (1 + distance)).toFixed(3)), // higher = closer match
+    }));
+  }, [ctx?.archetype]);
+
+  const balanceSeries = useMemo(() => {
+    if (!ctx?.transactions?.length) return [];
+    const sorted = [...ctx.transactions].sort((a, b) => a.date.localeCompare(b.date));
+    let running = 0;
+    // Sample to ~1 point per week to keep the line readable.
+    const points: { date: string; balance: number }[] = [];
+    for (const t of sorted) {
+      running += t.amount;
+      points.push({ date: t.date.slice(5), balance: Math.round(running) });
+    }
+    return points;
+  }, [ctx?.transactions]);
+
+  if (pastLoading) {
+    return <div className="card">Analysing spending profile…</div>;
+  }
+  if (pastError) {
+    return (
+      <div className="card">
+        <p className="font-medium" style={{ color: "var(--danger)" }}>
+          Couldn&apos;t load PAST data
+        </p>
+        <p className="muted mt-1 text-sm">{pastError}</p>
+        <p className="muted mt-2 text-sm">
+          Is the ML service running? Set <code>RENDER_ML_BASE_URL</code> (defaults to
+          http://127.0.0.1:8000).
+        </p>
+      </div>
+    );
+  }
+  if (!ctx?.archetype || !ctx?.burn_rate) {
+    return <div className="card">No analysis yet.</div>;
+  }
+
+  const { archetype, burn_rate } = ctx;
+  const slopePositive = burn_rate.trend_slope >= 0;
+
+  return (
+    <div className="grid gap-4">
+      <div className="card">
+        <p className="muted text-sm">Your spending archetype</p>
+        <div className="mt-2 flex items-center gap-3 flex-wrap">
+          <span className="text-2xl font-bold">{archetype.label}</span>
+          <span className="pill">nearest of 5 centroids</span>
+        </div>
+        <div className="mt-4 h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={radarData} outerRadius="72%">
+              <PolarGrid stroke="var(--border)" />
+              <PolarAngleAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 12 }} />
+              <PolarRadiusAxis tick={{ fill: "var(--muted)", fontSize: 10 }} domain={[0, 1]} />
+              <Radar
+                dataKey="closeness"
+                stroke="var(--accent)"
+                fill="var(--accent)"
+                fillOpacity={0.35}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  color: "var(--text)",
+                }}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+        <p className="muted text-xs">Closeness = 1 / (1 + Euclidean distance). Higher is a closer match.</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="card">
+          <p className="muted text-sm">Daily burn (consumption)</p>
+          <p className="text-2xl font-bold mt-1">{inr(burn_rate.daily_avg)}/day</p>
+        </div>
+        <div className="card">
+          <p className="muted text-sm">Balance trend</p>
+          <p
+            className="text-2xl font-bold mt-1"
+            style={{ color: slopePositive ? "var(--accent-2)" : "var(--danger)" }}
+          >
+            {slopePositive ? "▲" : "▼"} {inr(Math.abs(burn_rate.trend_slope))}/day
+          </p>
+          <p className="muted text-xs mt-1">
+            {slopePositive ? "Net accumulating" : "Net depleting"} (straight-line trend)
+          </p>
+        </div>
+        <div className="card">
+          <p className="muted text-sm">Projected zero-balance</p>
+          <p className="text-2xl font-bold mt-1">{burn_rate.projected_zero_balance_date}</p>
+          <p className="muted text-xs mt-1">If income stopped at today&apos;s spend rate</p>
+        </div>
+      </div>
+
+      <div className="card">
+        <p className="muted text-sm mb-3">Running balance over the last 3 months</p>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={balanceSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fill: "var(--muted)", fontSize: 11 }} minTickGap={24} />
+              <YAxis
+                tick={{ fill: "var(--muted)", fontSize: 11 }}
+                tickFormatter={(v) => `${Math.round(v / 1000)}k`}
+              />
+              <ReferenceLine y={0} stroke="var(--danger)" strokeDasharray="4 4" />
+              <Tooltip
+                formatter={(v: number) => inr(v)}
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  color: "var(--text)",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="balance"
+                stroke="var(--accent)"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
 }
