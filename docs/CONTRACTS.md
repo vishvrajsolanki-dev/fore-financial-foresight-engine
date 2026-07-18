@@ -60,7 +60,16 @@ Method   : Euclidean distance to 5 fixed centroid vectors
 ```
 **Centroid vectors — locked at TASK-003, re-tuning after lock is a breaking-change flag:**
 ```
-[fill in exact centroid values once TASK-003's blueprint is approved]
+Feature vector: 5 ratios of monthly income, keys in order: food, shopping, bills, entertainment, savings.
+  food/shopping/bills/entertainment = category's average monthly spend / monthly_income
+  savings = max(0, 1 - total_monthly_spend / monthly_income)
+Each centroid sums to 1.0. Source of truth: ml-service/centroids.py.
+
+Disciplined Saver : { food: 0.15, shopping: 0.08, bills: 0.30, entertainment: 0.05, savings: 0.42 }
+Impulsive Spender : { food: 0.20, shopping: 0.38, bills: 0.25, entertainment: 0.14, savings: 0.03 }
+The Foodie        : { food: 0.38, shopping: 0.12, bills: 0.28, entertainment: 0.12, savings: 0.10 }
+Social Butterfly  : { food: 0.20, shopping: 0.14, bills: 0.24, entertainment: 0.32, savings: 0.10 }
+Balanced Spender  : { food: 0.20, shopping: 0.15, bills: 0.28, entertainment: 0.12, savings: 0.25 }
 ```
 Locked by: TASK-003. Consumed by: TASK-002 (PAST display, via PLACEHOLDER-A until swap), TASK-004 (context write).
 
