@@ -2,40 +2,39 @@
 // Owner: TASK-002 (Drashti). Single client module so the PLACEHOLDER-A -> real swap at
 // Checkpoint-1 is a one-file change (mandatory constraint, see docs/TASK-002_handout.md).
 //
-// CURRENT STATE: PLACEHOLDER-A (exact shape locked in docs/CONTRACTS.md).
-// AT CHECKPOINT-1: replace the hardcoded object below with real fetch calls to
-//   POST {RENDER_ML_BASE_URL}/classify   (CONTRACT-002)
-//   POST {RENDER_ML_BASE_URL}/burn-rate  (CONTRACT-003)
-// per TASK-003's Placeholder Replacement Note, then delete the hardcoded object entirely.
+// STATE: PLACEHOLDER-A has been swapped for real fetch calls (Checkpoint-1 complete), per
+// TASK-003's Placeholder Replacement Note. The hardcoded stub has been deleted entirely, as
+// the note instructs. Data now comes from the Render ML service via our same-origin proxy:
+//   POST /api/ml/classify   (CONTRACT-002)  -> archetype
+//   POST /api/ml/burn-rate  (CONTRACT-003)  -> burn_rate
 
-import type { FinancialContext } from "@/types/financialContext";
+import type { FinancialContext, Transaction } from "@/types/financialContext";
 
-const PLACEHOLDER_A: Pick<FinancialContext, "archetype" | "burn_rate"> = {
-  archetype: {
-    label: "Balanced Spender",
-    distances: {
-      "Disciplined Saver": 4.2,
-      "Impulsive Spender": 6.1,
-      "The Foodie": 5.5,
-      "Social Butterfly": 5.8,
-      "Balanced Spender": 1.9,
-    },
-  },
-  burn_rate: {
-    daily_avg: 850,
-    trend_slope: -12.5,
-    projected_zero_balance_date: "2026-09-14",
-  },
-};
+type PastData = Pick<FinancialContext, "archetype" | "burn_rate">;
 
-export async function getPastData(): Promise<
-  Pick<FinancialContext, "archetype" | "burn_rate">
-> {
-  // TODO(TASK-003 swap): replace with real fetch calls once Vishvraj's endpoints are live.
-  // const baseUrl = process.env.RENDER_ML_BASE_URL;
-  // const [archetypeRes, burnRateRes] = await Promise.all([
-  //   fetch(`${baseUrl}/classify`, { method: "POST", ... }),
-  //   fetch(`${baseUrl}/burn-rate`, { method: "POST", ... }),
-  // ]);
-  return PLACEHOLDER_A;
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error || `${path} failed (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function getPastData(
+  transactions: Transaction[],
+  monthlyIncome: number
+): Promise<PastData> {
+  const [archetype, burn_rate] = await Promise.all([
+    postJson<FinancialContext["archetype"]>("/api/ml/classify", {
+      transactions,
+      monthly_income: monthlyIncome,
+    }),
+    postJson<FinancialContext["burn_rate"]>("/api/ml/burn-rate", { transactions }),
+  ]);
+  return { archetype, burn_rate };
 }
