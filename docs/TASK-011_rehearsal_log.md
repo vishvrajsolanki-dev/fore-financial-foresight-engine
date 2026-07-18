@@ -23,6 +23,17 @@ ENVIRONMENT SETUP CHECK  (run FIRST, before any run-through)
     ⇒ CONSTRAINTS "flip a Tier 2 flag off on rehearsal failure" contingency is N/A — nothing to flip.
 
 ────────────────────────────────────────────
+TEST BATTERY  (full green run before the timed rehearsal)
+────────────────────────────────────────────
+[✓] ML contract-conformance suite  : `npm run test:ml`  → 28 passed
+[✓] Lint                            : `npm run lint`     → No ESLint warnings or errors
+[✓] Data/contract verify (TASK-004) : `npm run verify`   → 5 brackets × 3 tiers, personas distinct, all passed
+[✓] canIAfford verify (TASK-007)    : scripts/verify_task007_can_i_afford.py → all checks passed
+[✓] Production build                 : `npm run build`    → compiled OK, types valid, 7/7 pages generated
+[✓] Rehearsal re-run on the PRODUCTION build (`npm run start`), not just dev:
+        run #1 core moment 0.06 s · run #2 0.02 s · both edge-case follow-ups tool-called & held up
+
+────────────────────────────────────────────
 RUN-THROUGH #1 (scripted pitch moment)  — persona: Priya, the Disciplined Saver
 ────────────────────────────────────────────
 PAST   : archetype "Disciplined Saver" (== intended) · daily burn ₹1,415.74 · zero-balance 2036-06-24
