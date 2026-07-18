@@ -93,16 +93,33 @@ function LoginForm() {
 
   const busy = loading || providerLoading !== null;
 
-  // Demo-only stub: plays the sign-in beat for the stage flow, then continues to
-  // the faces shell. No OAuth round-trip happens (brief: auth is out of scope).
-  function providerSignIn(provider: Provider) {
+  // Demo-only stub: no real OAuth — creates a guest JWT session when DATABASE_URL
+  // is set, otherwise falls through to the client-side demo flow.
+  async function providerSignIn(provider: Provider) {
     if (busy) return;
     setError(null);
     setProviderLoading(provider);
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.status === 503) {
+        router.push(next);
+        router.refresh();
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "Sign-in failed");
       router.push(next);
       router.refresh();
-    }, 900);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign-in failed");
+    } finally {
+      setProviderLoading(null);
+    }
   }
 
   async function onSubmit(e: FormEvent) {
