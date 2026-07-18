@@ -2,7 +2,8 @@
 // Owner: TASK-002 (Drashti). 3-tab nav shell shared by PAST / DECIDE / AHEAD.
 // Consumed by: TASK-006 (shares this layout).
 
-import Link from "next/link";
+import ShellNav from "@/components/ShellNav";
+import { FinancialContextProvider } from "@/lib/context/financialContext";
 
 export default function FacesLayout({
   children,
@@ -10,15 +11,18 @@ export default function FacesLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      {/* TODO(TASK-002): style this nav — Tailwind + shadcn/ui, per docs/CONTRACTS.md stack */}
-      <nav>
-        <Link href="/past">PAST</Link>
-        <Link href="/decide">DECIDE</Link>
-        <Link href="/ahead">AHEAD</Link>
-      </nav>
-      <main>{children}</main>
-      {/* TODO(TASK-010): visible "not licensed financial advice" disclaimer, every face */}
-    </div>
+    <FinancialContextProvider>
+      <div className="min-h-screen bg-slate-950 text-slate-100">
+        <ShellNav />
+        <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-6 sm:px-6">
+          {children}
+        </main>
+        <footer className="mx-auto w-full max-w-5xl px-4 pb-8 sm:px-6">
+          <p className="border-t border-slate-800 pt-4 text-xs text-slate-500">
+            FORE is a hackathon demo. Not licensed financial advice.
+          </p>
+        </footer>
+      </div>
+    </FinancialContextProvider>
   );
 }
