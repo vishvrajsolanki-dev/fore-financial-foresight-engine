@@ -5,13 +5,10 @@
 
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 import { getPersona } from "@/lib/data/personas";
-
-function inr(n: number): string {
-  return "₹" + Math.round(n).toLocaleString("en-IN");
-}
+import { formatMoney } from "@/lib/format/currency";
 
 export default function BenchmarkPanel() {
-  const { ctx, activeId } = useFinancialContext();
+  const { ctx, activeId, currency } = useFinancialContext();
   const persona = activeId ? getPersona(activeId) : undefined;
   const benchmark = ctx?.benchmark;
 
@@ -47,7 +44,7 @@ export default function BenchmarkPanel() {
               <div className="flex justify-between text-sm">
                 <span className="capitalize">{row.category}</span>
                 <span className="muted">
-                  {inr(row.user_value)}/mo ·{" "}
+                  {formatMoney(row.user_value, currency)}/mo ·{" "}
                   <strong style={{ color: "var(--text)" }}>{pct}th pct</strong>
                 </span>
               </div>

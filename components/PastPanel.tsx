@@ -23,14 +23,17 @@ import {
 } from "recharts";
 
 import FaceIntro from "@/components/FaceIntro";
+import { CardSkeleton, ChartSkeleton } from "@/components/LoadingSkeleton";
+import { features } from "@/lib/features";
+import { formatMoney } from "@/lib/format/currency";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
-function inr(n: number): string {
-  return "₹" + Math.round(n).toLocaleString("en-IN");
+function inr(n: number, currency: "INR" | "USD" | "EUR" = "INR"): string {
+  return formatMoney(n, currency);
 }
 
 export default function PastPanel() {
-  const { ctx, pastLoading, pastError } = useFinancialContext();
+  const { ctx, pastLoading, pastError, currency } = useFinancialContext();
 
   const radarData = useMemo(() => {
     if (!ctx?.archetype) return [];
@@ -61,7 +64,14 @@ export default function PastPanel() {
           title="Your spending, decoded"
           blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
         />
-        <div className="card muted text-sm">Analysing spending profile…</div>
+        {features.loadingSkeletons ? (
+          <>
+            <CardSkeleton lines={2} />
+            <ChartSkeleton />
+          </>
+        ) : (
+          <div className="card muted text-sm">Analysing spending profile…</div>
+        )}
       </div>
     );
   }
@@ -128,6 +138,7 @@ export default function PastPanel() {
                 stroke="var(--accent)"
                 fill="var(--accent)"
                 fillOpacity={0.35}
+                isAnimationActive={features.chartAnimations}
               />
               <Tooltip
                 contentStyle={{
@@ -146,7 +157,7 @@ export default function PastPanel() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card">
           <p className="muted text-sm">Daily burn (consumption)</p>
-          <p className="text-2xl font-bold mt-1">{inr(burn_rate.daily_avg)}/day</p>
+          <p className="text-2xl font-bold mt-1">{inr(burn_rate.daily_avg, currency)}/day</p>
         </div>
         <div className="card">
           <p className="muted text-sm">Balance trend</p>
@@ -154,7 +165,7 @@ export default function PastPanel() {
             className="text-2xl font-bold mt-1"
             style={{ color: slopePositive ? "var(--accent-2)" : "var(--danger)" }}
           >
-            {slopePositive ? "▲" : "▼"} {inr(Math.abs(burn_rate.trend_slope))}/day
+            {slopePositive ? "▲" : "▼"} {inr(Math.abs(burn_rate.trend_slope), currency)}/day
           </p>
           <p className="muted text-xs mt-1">
             {slopePositive ? "Net accumulating" : "Net depleting"} (straight-line trend)
@@ -180,7 +191,7 @@ export default function PastPanel() {
               />
               <ReferenceLine y={0} stroke="var(--danger)" strokeDasharray="4 4" />
               <Tooltip
-                formatter={(v: number) => inr(v)}
+                formatter={(v: number) => inr(v, currency)}
                 contentStyle={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
@@ -194,6 +205,7 @@ export default function PastPanel() {
                 stroke="var(--accent)"
                 strokeWidth={2}
                 dot={false}
+                isAnimationActive={features.chartAnimations}
               />
             </LineChart>
           </ResponsiveContainer>

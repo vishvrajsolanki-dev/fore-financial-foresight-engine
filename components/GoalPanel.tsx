@@ -11,13 +11,16 @@ import {
   purchaseDailyBurn,
   useFinancialContext,
 } from "@/lib/context/FinancialContextProvider";
+import { features } from "@/lib/features";
+import { exportAheadSummaryPng } from "@/lib/export/aheadSummary";
+import { formatMoney } from "@/lib/format/currency";
 
-function inr(n: number): string {
-  return "₹" + Math.round(n).toLocaleString("en-IN");
+function inr(n: number, currency: "INR" | "USD" | "EUR" = "INR"): string {
+  return formatMoney(n, currency);
 }
 
 export default function GoalPanel() {
-  const { ctx, setGoal } = useFinancialContext();
+  const { ctx, setGoal, currency } = useFinancialContext();
   const [amount, setAmount] = useState("50000");
   const [date, setDate] = useState("2026-12-31");
   const [formError, setFormError] = useState<string | null>(null);
@@ -126,7 +129,7 @@ export default function GoalPanel() {
               {goal.on_pace ? "On pace" : "Behind pace"}
             </span>
             <span className="muted text-sm">
-              Target {inr(goal.target_amount)} by {goal.target_date}
+              Target {inr(goal.target_amount, currency)} by {goal.target_date}
             </span>
           </div>
           <p className="muted text-sm">
@@ -138,9 +141,9 @@ export default function GoalPanel() {
           </p>
           {verdict && goalImpactDays != null && goalImpactDays > 0 && (
             <p className="text-sm" style={{ color: "var(--warn)" }}>
-              After {verdict.item} ({inr(verdict.amount)}), you&apos;re about {goalImpactDays} day
+              After {verdict.item} ({inr(verdict.amount, currency)}), you&apos;re about {goalImpactDays} day
               {goalImpactDays === 1 ? "" : "s"} further from this goal — the pace above already
-              includes that purchase (≈{inr(purchaseDailyBurn(verdict.amount) * 30)}/mo extra burn).
+              includes that purchase (≈{inr(purchaseDailyBurn(verdict.amount) * 30, currency)}/mo extra burn).
             </p>
           )}
         </div>
@@ -152,12 +155,22 @@ export default function GoalPanel() {
           style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}
         >
           <p className="text-sm">
-            <strong>Recent DECIDE verdict:</strong> {verdict.item} ({inr(verdict.amount)}) shifts your
+            <strong>Recent DECIDE verdict:</strong> {verdict.item} ({inr(verdict.amount, currency)}) shifts your
             zero-balance date to <strong>{verdict.new_zero_balance_date}</strong> ({verdict.day_shift}{" "}
             day{Math.abs(verdict.day_shift) === 1 ? "" : "s"}).
           </p>
           <p className="muted text-xs mt-1">This panel reflects the same financial context DECIDE just updated.</p>
         </div>
+      )}
+
+      {features.exportAhead && ctx && (
+        <button
+          type="button"
+          className="btn-ghost mt-4 text-sm"
+          onClick={() => exportAheadSummaryPng(ctx, ctx.persona)}
+        >
+          Export AHEAD summary (PNG)
+        </button>
       )}
     </div>
   );

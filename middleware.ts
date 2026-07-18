@@ -34,7 +34,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  // Full JWT verification happens in API routes (Node runtime). Middleware only checks presence.
   return NextResponse.next();
 }
 

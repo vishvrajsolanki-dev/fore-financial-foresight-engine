@@ -1,14 +1,10 @@
-// FORE — app/(faces)/layout.tsx
-// Owner: TASK-002 (Drashti). 3-tab nav shell shared by PAST / DECIDE / AHEAD, plus the demo
-// persona switcher (so PAST/DECIDE/AHEAD all operate on one selected financial_context).
-// Consumed by: TASK-006 (shares this layout).
-// TASK-010: disclaimer visible on every face + nav/mobile consistency polish.
-
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AuthNav from "@/components/AuthNav";
+import FeatureToolbar from "@/components/FeatureToolbar";
+import PersonaCompare from "@/components/PersonaCompare";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 const TABS = [
@@ -26,7 +22,8 @@ export default function FacesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { personas, activeId, ctx, selectPersona, fullStackEnabled, authUser } = useFinancialContext();
+  const { personas, activeId, ctx, selectPersona, fullStackEnabled, authUser, currency, setCurrency } =
+    useFinancialContext();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6">
@@ -42,7 +39,10 @@ export default function FacesLayout({
               guess.
             </p>
           </div>
-          <AuthNav />
+          <div className="flex flex-wrap items-center gap-2">
+            <AuthNav />
+            <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
+          </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <label htmlFor="persona" className="muted text-sm whitespace-nowrap">
               Demo persona
@@ -91,15 +91,14 @@ export default function FacesLayout({
           })}
         </nav>
 
-        {/* Visible on every face without scrolling — TASK-010 deliverable. */}
+        <PersonaCompare />
+
         <p className="disclaimer mt-4" role="note">
           {DISCLAIMER}
         </p>
       </header>
 
       <main className="flex-1">
-        {/* PAST always renders — it hosts the CSV upload, which is how a fresh
-            session gets its financial context in the first place. */}
         {!activeId && pathname !== "/past" ? (
           <div className="card rise-in py-12 text-center">
             <p className="text-lg font-medium">No financial context yet</p>
