@@ -19,6 +19,18 @@ async function main() {
   if (parsed.transactions.length < 2) throw new Error("CSV parser failed");
   if (parsed.detectedFormat !== "indian_bank_debit_credit") throw new Error("format detect");
 
+  const descCsv = `Date,Description,Amount,Balance
+01/04/2026,SWIGGY ORDER,385.00,100000
+02/04/2026,SALARY CREDIT,65000.00,165000
+03/04/2026,AMAZON INDIA,2499.00,162501`;
+
+  const descParsed = parseBankCsv(descCsv);
+  if (descParsed.transactions.length < 3) throw new Error("Description+Amount CSV failed");
+  if (descParsed.detectedFormat !== "single_amount_column") throw new Error("Description format detect");
+  if (!descParsed.transactions.some((t) => t.description?.includes("SWIGGY"))) {
+    throw new Error("Description+Amount CSV missing SWIGGY row");
+  }
+
   const plain = "HDFC UPI payment ref 12345";
   if (decryptField(encryptField(plain)) !== plain) throw new Error("encryption");
 

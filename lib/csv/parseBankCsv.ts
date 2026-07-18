@@ -38,13 +38,26 @@ const CATEGORY_KEYWORDS: Record<string, RegExp[]> = {
 };
 
 function normalizeHeader(h: string): string {
-  return h.trim().toLowerCase().replace(/\s+/g, " ");
+  return h.trim().replace(/^\ufeff/, "").toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Match header aliases without false positives (e.g. "cr" inside "description"). */
+function matchesAlias(header: string, alias: string): boolean {
+  if (header === alias) return true;
+  if (alias.includes(" ")) return header.includes(alias);
+  const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(?:^|[\\s_./-])${escaped}(?:$|[\\s_./-])`);
+  return re.test(` ${header} `);
 }
 
 function findColumn(headers: string[], aliases: string[]): number | undefined {
   for (let i = 0; i < headers.length; i++) {
     const h = normalizeHeader(headers[i]);
-    if (aliases.some((a) => h === a || h.includes(a))) return i;
+    if (aliases.some((a) => h === a)) return i;
+  }
+  for (let i = 0; i < headers.length; i++) {
+    const h = normalizeHeader(headers[i]);
+    if (aliases.some((a) => matchesAlias(h, a))) return i;
   }
   return undefined;
 }
