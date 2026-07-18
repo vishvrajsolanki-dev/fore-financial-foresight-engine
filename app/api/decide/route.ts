@@ -1,165 +1,192 @@
 // FORE — app/api/decide/route.ts
-// Owner: TASK-005 (Allen, skeleton) / TASK-008 (Allen, chat UI wiring).
-// Accepts a chat message, calls Groq/Llama 3.1 with tool-calling enabled, wires canIAfford().
+// Owner: TASK-005 (Allen, skeleton) / TASK-008 (Allen, chat wiring).
+// Accepts a chat message + the active persona's transactions, calls Groq/Llama 3.1 with
+// tool-calling enabled, and executes canIAfford() when the model requests it.
 // Dev GROQ_API_KEY only until TASK-012's rotation, per CONTRACT-008.
 //
-// Anti-hallucination rule (CONTRACT-004): the model must call canIAfford() before stating any
-// day-shift number. The response includes `evidence.tool_calls` (the raw block from Groq's first
-// response) so Testing & Verification can confirm the tool was genuinely called, not narrated.
+// Anti-hallucination rule (CONTRACT-004): every affordability number the user sees MUST come from
+// a real canIAfford tool call. The response reports tool_called so the UI can show the trust badge.
 
 import { NextRequest, NextResponse } from "next/server";
-import { canIAffordToolDefinition, canIAfford } from "@/lib/tools/canIAfford";
-import type { CanIAffordOutput } from "@/lib/tools/canIAfford";
+import Groq from "groq-sdk";
 
-// Override point exists only so wiring can be integration-tested against a local mock when no
-// dev key is available; production always hits Groq directly.
-const GROQ_CHAT_URL =
-  (process.env.GROQ_API_BASE_URL ?? "https://api.groq.com/openai/v1") +
-  "/chat/completions";
-// Llama 3.1 per the locked stack. Overridable via env in case Groq renames/deprecates the slug.
-const GROQ_MODEL = process.env.GROQ_MODEL ?? "llama-3.1-8b-instant";
+import {
+  canIAffordToolDefinition,
+  canIAfford,
+  type CanIAffordOutput,
+} from "@/lib/tools/canIAfford";
+import type { Transaction } from "@/types/financialContext";
 
-const SYSTEM_PROMPT = `You are FORE's DECIDE assistant. You help a user decide whether they can afford a purchase, grounded in their real financial data.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-Rules — these are hard constraints, not suggestions:
-1. If the user asks whether they can afford something (any purchase/affordability question), you MUST call the canIAfford tool. Never estimate, guess, or state any affordability verdict, day-shift, or zero-balance date yourself.
-2. Only state numbers that came back from the canIAfford tool's return value. Quoting a number the tool did not return is forbidden.
-3. If the message is NOT an affordability question (greetings, small talk, unrelated questions), do NOT call any tool. Just reply conversationally and briefly, and mention you can help them decide if they can afford something.
-4. Amounts may be written in Indian formats (e.g. "₹15,000", "15k"). Normalize to a plain number for the tool call.
-5. After the tool returns, narrate its result faithfully: the affordable verdict, the day_shift, the new_zero_balance_date, and the explanation. Do not embellish with numbers the tool did not provide.`;
+const MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 
-interface GroqToolCall {
-  id: string;
-  type: "function";
-  function: { name: string; arguments: string };
+const SYSTEM_PROMPT = `You are FORE's DECIDE assistant, a grounded personal-finance helper.
+When the user asks whether they can afford a purchase or expense (anything with a rupee amount or
+a clear item to buy), you MUST call the canIAfford tool and base your entire answer ONLY on its
+returned values (affordable, day_shift, new_zero_balance_date, explanation). Never invent or state
+a day-shift, date, or affordability judgement yourself — only report what the tool returns.
+For greetings or messages that are not about affording something, reply briefly and do NOT call the
+tool. Keep answers concise and friendly.`;
+
+interface DecideVerdict {
+  item: string;
+  amount: number;
+  day_shift: number;
+  new_zero_balance_date: string;
+  affordable: boolean;
 }
 
-interface GroqMessage {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string | null;
-  tool_calls?: GroqToolCall[];
-  tool_call_id?: string;
+// --- Keyless fallback: still honours the contract (real canIAfford call), just without the LLM. ---
+// Unit suffixes are matched only as whole tokens (k/thousand/lakh/cr), so the "l" in "laptop"
+// is never mistaken for "lakh". Amount is capped to a sane ceiling.
+const AMOUNT_RE =
+  /(?:₹|rs\.?|inr)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(k|thousand|lakhs?|lac|cr|crores?)?(?![a-z])/i;
+const AFFORD_INTENT_RE = /(afford|buy|purchase|spend|should i|can i|get)/i;
+const TRAILING_FILLER_RE =
+  /\s+(next|this|last)?\s*(month|week|year|now|today|please|instead|for|at|in|on)\b.*$/i;
+
+function parseAmount(message: string): number | null {
+  const m = message.match(AMOUNT_RE);
+  if (!m) return null;
+  let n = parseFloat(m[1].replace(/,/g, ""));
+  const unit = (m[2] || "").toLowerCase();
+  if (unit === "k" || unit === "thousand") n *= 1000;
+  else if (unit.startsWith("lakh") || unit === "lac") n *= 100000;
+  else if (unit === "cr" || unit.startsWith("crore")) n *= 10000000;
+  if (!Number.isFinite(n) || n <= 0 || n > 1e8) return null;
+  return n;
 }
 
-async function callGroq(
-  apiKey: string,
-  messages: GroqMessage[],
-  withTools: boolean
-) {
-  const res = await fetch(GROQ_CHAT_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages,
-      ...(withTools
-        ? { tools: [canIAffordToolDefinition], tool_choice: "auto" as const }
-        : {}),
-      temperature: 0.2,
-    }),
-  });
+function clean(item: string): string {
+  return item.trim().replace(TRAILING_FILLER_RE, "").replace(/[.?!,]+$/, "").trim() || "this expense";
+}
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Groq API ${res.status}: ${detail.slice(0, 500)}`);
+function guessItem(message: string): string {
+  // Item named right after the amount: "... 15000 laptop", "buy ₹5,000 headphones".
+  let m = message.match(
+    /[0-9][0-9,]*(?:\.[0-9]+)?\s*(?:k|thousand|lakhs?|lac|cr|crores?|rupees?|rs\.?|₹)?\s+(?:on\s+|for\s+)?(?:an?\s+|the\s+)?([a-z][a-z\s-]{1,25})/i
+  );
+  if (m) return clean(m[1]);
+  // Item named before the amount: "a laptop for 15000".
+  m = message.match(
+    /(?:afford|buy|purchase|get)\s+(?:an?\s+|the\s+)?([a-z][a-z\s-]{1,25}?)\s+(?:for|at|costing|worth|,)?\s*(?:₹|rs\.?|inr)?\s*[0-9]/i
+  );
+  if (m) return clean(m[1]);
+  return "this expense";
+}
+
+async function fallbackDecide(message: string, transactions: Transaction[]) {
+  const amount = parseAmount(message);
+  const hasIntent = AFFORD_INTENT_RE.test(message);
+  if (amount === null || !hasIntent) {
+    return NextResponse.json({
+      reply:
+        "Hi! Ask me something like \"Can I afford a ₹15,000 laptop next month?\" and I'll run the " +
+        "real numbers against your spending.",
+      tool_called: false,
+      verdict: null,
+      note: "GROQ_API_KEY not set — using deterministic fallback (still calls the real canIAfford function).",
+    });
   }
-  return res.json();
+  const item = guessItem(message);
+  const out = await canIAfford({ item, amount, transactions });
+  return NextResponse.json({
+    reply: out.explanation,
+    tool_called: true,
+    verdict: toVerdict(item, amount, out),
+    note: "GROQ_API_KEY not set — used deterministic fallback; affordability numbers are still real.",
+  });
+}
+
+function toVerdict(item: string, amount: number, out: CanIAffordOutput): DecideVerdict {
+  return {
+    item,
+    amount,
+    day_shift: out.day_shift,
+    new_zero_balance_date: out.new_zero_balance_date,
+    affordable: out.affordable,
+  };
 }
 
 export async function POST(req: NextRequest) {
-  let message: unknown;
-  try {
-    ({ message } = await req.json());
-  } catch {
-    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
-  }
+  const body = await req.json().catch(() => null);
+  const message: unknown = body?.message;
+  const transactions: Transaction[] = Array.isArray(body?.transactions) ? body.transactions : [];
 
   if (!message || typeof message !== "string") {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
-
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
+  if (transactions.length === 0) {
     return NextResponse.json(
-      { error: "GROQ_API_KEY is not set (dev key, per CONTRACT-008)" },
-      { status: 500 }
+      { error: "Select a persona first — no transactions in context." },
+      { status: 400 }
     );
   }
 
-  const messages: GroqMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: message },
-  ];
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return fallbackDecide(message, transactions);
+  }
 
   try {
-    // Round-trip 1: let the model decide whether to call the tool.
-    const first = await callGroq(apiKey, messages, true);
-    const firstMessage: GroqMessage = first.choices[0].message;
-    const toolCalls = firstMessage.tool_calls ?? [];
+    const groq = new Groq({ apiKey });
+    const messages: Groq.Chat.ChatCompletionMessageParam[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: message },
+    ];
+
+    const first = await groq.chat.completions.create({
+      model: MODEL,
+      messages,
+      tools: [canIAffordToolDefinition],
+      tool_choice: "auto",
+      temperature: 0.2,
+    });
+
+    const choice = first.choices[0].message;
+    const toolCalls = choice.tool_calls ?? [];
 
     if (toolCalls.length === 0) {
-      // Not an affordability question — plain conversational reply, no tool.
+      // No affordability intent — return the model's direct reply, no tool used.
       return NextResponse.json({
-        reply: firstMessage.content ?? "",
+        reply: choice.content ?? "",
         tool_called: false,
         verdict: null,
-        evidence: { tool_calls: null },
       });
     }
 
-    // Execute each canIAfford call (normally exactly one) and feed results back.
-    messages.push(firstMessage);
-    let verdict: CanIAffordOutput | null = null;
-
-    for (const toolCall of toolCalls) {
-      if (toolCall.function.name !== "canIAfford") {
-        return NextResponse.json(
-          { error: `model requested unknown tool: ${toolCall.function.name}` },
-          { status: 502 }
-        );
-      }
-      let args: { item?: string; amount?: number };
-      try {
-        args = JSON.parse(toolCall.function.arguments);
-      } catch {
-        return NextResponse.json(
-          { error: "model produced unparseable tool arguments" },
-          { status: 502 }
-        );
-      }
-      verdict = await canIAfford({
-        item: args.item ?? "",
-        amount: args.amount ?? 0,
-        // TODO(TASK-008): pass the live financial_context's transactions here. The TASK-005
-        // stub ignores them; TASK-007's real math (Render /can-i-afford) needs them.
-        transactions: [],
-      });
+    // Execute each requested tool call (real math), feed results back to the model.
+    messages.push(choice);
+    let verdict: DecideVerdict | null = null;
+    for (const call of toolCalls) {
+      if (call.function.name !== "canIAfford") continue;
+      const args = JSON.parse(call.function.arguments || "{}");
+      const item = String(args.item ?? "this expense");
+      const amount = Number(args.amount ?? 0);
+      const out = await canIAfford({ item, amount, transactions });
+      verdict = toVerdict(item, amount, out);
       messages.push({
         role: "tool",
-        tool_call_id: toolCall.id,
-        content: JSON.stringify(verdict),
+        tool_call_id: call.id,
+        content: JSON.stringify(out),
       });
     }
 
-    // Round-trip 2: model narrates the tool's return value. No tools offered — the answer
-    // already exists; a second tool call here would be spurious.
-    const second = await callGroq(apiKey, messages, false);
-    const reply: string = second.choices[0].message.content ?? "";
+    const second = await groq.chat.completions.create({
+      model: MODEL,
+      messages,
+      temperature: 0.2,
+    });
 
     return NextResponse.json({
-      reply,
+      reply: second.choices[0].message.content ?? verdict?.new_zero_balance_date ?? "",
       tool_called: true,
       verdict,
-      // Raw tool_calls block from Groq's first response — the Testing & Verification evidence
-      // that the number came from a real function call, per CONTRACT-004.
-      evidence: { tool_calls: toolCalls },
     });
   } catch (err) {
-    // CONTRACT-006 error shape — never crash the chat UI on an upstream failure.
-    const msg = err instanceof Error ? err.message : "unknown error";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    const detail = err instanceof Error ? err.message : "Groq request failed";
+    return NextResponse.json({ error: detail }, { status: 502 });
   }
 }

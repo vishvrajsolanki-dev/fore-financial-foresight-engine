@@ -1,14 +1,20 @@
 // FORE — lib/tools/canIAfford.ts
 // CONTRACT-004 in docs/CONTRACTS.md. Owner: TASK-005 (Allen, stub) -> TASK-007 (Vishvraj,
-// real math, behind the same interface — zero-swap, no Placeholder Replacement Note needed).
+// real math behind the same interface — zero-swap, no Placeholder Replacement Note needed).
 //
 // Rule: the LLM MUST call this before stating any day-shift number. A number stated without a
 // matching tool call is a contract violation, flagged regardless of plausibility.
+//
+// STATE: the TASK-005 stub has been replaced (zero-swap) — this now performs a real cross-origin
+// HTTP call to the Python service's POST /can-i-afford (CONTRACT-006), server-side only.
+
+import { callMl } from "@/lib/api/mlServer";
+import type { Transaction } from "@/types/financialContext";
 
 export interface CanIAffordInput {
   item: string;
   amount: number;
-  transactions: { date: string; category: string; amount: number }[];
+  transactions: Transaction[];
 }
 
 export interface CanIAffordOutput {
@@ -37,23 +43,20 @@ export const canIAffordToolDefinition = {
   },
 };
 
-// TASK-005: stub. Returns a plausible-shaped but fake response so tool-calling wiring can be
-// verified before TASK-007's real math exists. Values are deliberately realistic so the model's
-// narration of the return value reads correctly (the deliverable under test), but they are NOT
-// computed from the transactions.
-export async function canIAfford(
-  input: CanIAffordInput
-): Promise<CanIAffordOutput> {
-  // TODO(TASK-007 swap): replace with POST {RENDER_ML_BASE_URL}/can-i-afford (CONTRACT-004),
-  // passing input.item, input.amount, and the current financial_context's transactions —
-  // via a client module (lib/api/mlClient.ts) mirroring the pastClient.ts pattern.
-  return {
-    affordable: true,
-    day_shift: -6,
-    new_zero_balance_date: "2026-09-08",
-    explanation:
-      `Buying ${input.item} for ₹${input.amount} moves your projected zero-balance date ` +
-      `forward by 6 days, to 2026-09-08. You can afford it, but it tightens your runway. ` +
-      `[STUB — real regression lands in TASK-007 behind this same interface.]`,
-  };
+export async function canIAfford(input: CanIAffordInput): Promise<CanIAffordOutput> {
+  const result = await callMl<CanIAffordOutput>("/can-i-afford", {
+    item: input.item,
+    amount: input.amount,
+    transactions: input.transactions,
+  });
+  if (!result.ok) {
+    // Surface a contract-shaped, non-crashing result the model can narrate honestly.
+    return {
+      affordable: false,
+      day_shift: 0,
+      new_zero_balance_date: "",
+      explanation: `Could not verify affordability — the calculation service is unavailable (${result.error}).`,
+    };
+  }
+  return result.data;
 }

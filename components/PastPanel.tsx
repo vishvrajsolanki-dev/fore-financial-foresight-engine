@@ -1,191 +1,171 @@
 // FORE — components/PastPanel.tsx
-// Owner: TASK-002 (Drashti). Archetype label + radar chart (distances) + burn-rate line (Recharts).
-// Data source: archetype/burn-rate arrive via financial_context, populated exclusively through
-// lib/api/pastClient.ts — never a direct fetch here, so the PLACEHOLDER-A -> real swap at
-// Checkpoint-1 stays a one-file change.
-// Edge case: no persona selected -> prompt state, must not crash.
+// Owner: TASK-002 (Drashti). Archetype label + radar chart (distances) + burn-rate + balance line.
+// Data source: lib/api/pastClient.ts via the shared context — never a direct fetch here, so the
+// PLACEHOLDER-A -> real swap stayed a one-file change.
 
 "use client";
 
 import { useMemo } from "react";
 import {
-  Line,
-  LineChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
   Radar,
   RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
   ResponsiveContainer,
-  Tooltip,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
+  Tooltip,
+  CartesianGrid,
+  ReferenceLine,
 } from "recharts";
-import { useFinancialContext } from "@/lib/context/financialContext";
 
-function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-      <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-slate-100">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
-    </div>
-  );
+import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
+
+function inr(n: number): string {
+  return "₹" + Math.round(n).toLocaleString("en-IN");
 }
 
 export default function PastPanel() {
-  const { ctx, activePersona } = useFinancialContext();
+  const { ctx, pastLoading, pastError } = useFinancialContext();
 
-  // Daily spend series derived from the persona's transactions (display only — the burn-rate
-  // numbers themselves come from financial_context, per CONTRACT-001's write-back rule).
-  const dailySeries = useMemo(() => {
-    const byDay = new Map<string, number>();
-    for (const t of ctx.transactions) {
-      byDay.set(t.date, (byDay.get(t.date) ?? 0) + t.amount);
+  const radarData = useMemo(() => {
+    if (!ctx?.archetype) return [];
+    return Object.entries(ctx.archetype.distances).map(([label, distance]) => ({
+      label: label.replace(" ", "\n"),
+      closeness: Number((1 / (1 + distance)).toFixed(3)), // higher = closer match
+    }));
+  }, [ctx?.archetype]);
+
+  const balanceSeries = useMemo(() => {
+    if (!ctx?.transactions?.length) return [];
+    const sorted = [...ctx.transactions].sort((a, b) => a.date.localeCompare(b.date));
+    let running = 0;
+    // Sample to ~1 point per week to keep the line readable.
+    const points: { date: string; balance: number }[] = [];
+    for (const t of sorted) {
+      running += t.amount;
+      points.push({ date: t.date.slice(5), balance: Math.round(running) });
     }
-    return [...byDay.entries()]
-      .sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([date, spend]) => ({ date: date.slice(5), spend }));
-  }, [ctx.transactions]);
+    return points;
+  }, [ctx?.transactions]);
 
-  if (!activePersona) {
+  if (pastLoading) {
+    return <div className="card">Analysing spending profile…</div>;
+  }
+  if (pastError) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 p-8 text-center">
-        <h1 className="text-2xl font-bold">PAST — your spending, decoded</h1>
-        <p className="mt-3 max-w-md text-sm text-slate-400">
-          Select a demo persona from the top-right to see their spending
-          archetype, burn-rate trend, and zero-balance projection.
+      <div className="card">
+        <p className="font-medium" style={{ color: "var(--danger)" }}>
+          Couldn&apos;t load PAST data
+        </p>
+        <p className="muted mt-1 text-sm">{pastError}</p>
+        <p className="muted mt-2 text-sm">
+          Is the ML service running? Set <code>RENDER_ML_BASE_URL</code> (defaults to
+          http://127.0.0.1:8000).
         </p>
       </div>
     );
   }
+  if (!ctx?.archetype || !ctx?.burn_rate) {
+    return <div className="card">No analysis yet.</div>;
+  }
 
-  const radarData = ctx.archetype
-    ? Object.entries(ctx.archetype.distances).map(([archetype, distance]) => ({
-        archetype,
-        // Invert distance for the radar so "closer to this archetype" reads as a larger area.
-        closeness: Number((1 / Math.max(distance, 0.001)).toFixed(3)),
-        distance,
-      }))
-    : [];
+  const { archetype, burn_rate } = ctx;
+  const slopePositive = burn_rate.trend_slope >= 0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">PAST</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {activePersona.display_name} · income ₹
-          {ctx.monthly_income.toLocaleString("en-IN")}/mo ·{" "}
-          {ctx.transactions.length} transactions over 90 days
-        </p>
+    <div className="grid gap-4">
+      <div className="card">
+        <p className="muted text-sm">Your spending archetype</p>
+        <div className="mt-2 flex items-center gap-3 flex-wrap">
+          <span className="text-2xl font-bold">{archetype.label}</span>
+          <span className="pill">nearest of 5 centroids</span>
+        </div>
+        <div className="mt-4 h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={radarData} outerRadius="72%">
+              <PolarGrid stroke="var(--border)" />
+              <PolarAngleAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 12 }} />
+              <PolarRadiusAxis tick={{ fill: "var(--muted)", fontSize: 10 }} domain={[0, 1]} />
+              <Radar
+                dataKey="closeness"
+                stroke="var(--accent)"
+                fill="var(--accent)"
+                fillOpacity={0.35}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  color: "var(--text)",
+                }}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+        <p className="muted text-xs">Closeness = 1 / (1 + Euclidean distance). Higher is a closer match.</p>
       </div>
 
-      {ctx.archetype && ctx.burn_rate ? (
-        <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard
-              label="Spending archetype"
-              value={ctx.archetype.label}
-              hint="Euclidean distance to 5 fixed centroids"
-            />
-            <StatCard
-              label="Daily burn rate"
-              value={`₹${ctx.burn_rate.daily_avg.toLocaleString("en-IN")}/day`}
-              hint={
-                ctx.burn_rate.trend_slope <= 0
-                  ? `trending down ${Math.abs(ctx.burn_rate.trend_slope)}/day`
-                  : `trending up ${ctx.burn_rate.trend_slope}/day`
-              }
-            />
-            <StatCard
-              label="Projected zero balance"
-              value={ctx.burn_rate.projected_zero_balance_date}
-              hint="Straight-line trend, not a forecast"
-            />
-          </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="card">
+          <p className="muted text-sm">Daily burn (consumption)</p>
+          <p className="text-2xl font-bold mt-1">{inr(burn_rate.daily_avg)}/day</p>
+        </div>
+        <div className="card">
+          <p className="muted text-sm">Balance trend</p>
+          <p
+            className="text-2xl font-bold mt-1"
+            style={{ color: slopePositive ? "var(--accent-2)" : "var(--danger)" }}
+          >
+            {slopePositive ? "▲" : "▼"} {inr(Math.abs(burn_rate.trend_slope))}/day
+          </p>
+          <p className="muted text-xs mt-1">
+            {slopePositive ? "Net accumulating" : "Net depleting"} (straight-line trend)
+          </p>
+        </div>
+        <div className="card">
+          <p className="muted text-sm">Projected zero-balance</p>
+          <p className="text-2xl font-bold mt-1">{burn_rate.projected_zero_balance_date}</p>
+          <p className="muted text-xs mt-1">If income stopped at today&apos;s spend rate</p>
+        </div>
+      </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-              <h2 className="text-sm font-semibold text-slate-300">
-                Archetype closeness
-              </h2>
-              <p className="text-xs text-slate-500">
-                Larger = closer to that archetype&apos;s centroid
-              </p>
-              <div className="mt-2 h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData} outerRadius="75%">
-                    <PolarGrid stroke="#334155" />
-                    <PolarAngleAxis
-                      dataKey="archetype"
-                      tick={{ fill: "#94a3b8", fontSize: 11 }}
-                    />
-                    <PolarRadiusAxis tick={false} axisLine={false} />
-                    <Radar
-                      name="closeness"
-                      dataKey="closeness"
-                      stroke="#34d399"
-                      fill="#34d399"
-                      fillOpacity={0.35}
-                    />
-                    <Tooltip
-                      formatter={(_v, _n, entry) => [
-                        `distance ${(entry?.payload as { distance: number }).distance}`,
-                        (entry?.payload as { archetype: string }).archetype,
-                      ]}
-                      contentStyle={{
-                        background: "#0f172a",
-                        border: "1px solid #334155",
-                      }}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-              <h2 className="text-sm font-semibold text-slate-300">
-                Daily spend (last 90 days)
-              </h2>
-              <p className="text-xs text-slate-500">
-                Burn rate ₹{ctx.burn_rate.daily_avg.toLocaleString("en-IN")}
-                /day avg
-              </p>
-              <div className="mt-2 h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dailySeries}>
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: "#94a3b8", fontSize: 10 }}
-                      interval={13}
-                    />
-                    <YAxis
-                      tick={{ fill: "#94a3b8", fontSize: 10 }}
-                      width={55}
-                    />
-                    <Tooltip
-                      formatter={(v) => [`₹${Number(v).toLocaleString("en-IN")}`, "spend"]}
-                      contentStyle={{
-                        background: "#0f172a",
-                        border: "1px solid #334155",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="spend"
-                      stroke="#38bdf8"
-                      strokeWidth={1.5}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <p className="text-sm text-slate-400">Analyzing spending history…</p>
-      )}
+      <div className="card">
+        <p className="muted text-sm mb-3">Running balance over the last 3 months</p>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={balanceSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fill: "var(--muted)", fontSize: 11 }} minTickGap={24} />
+              <YAxis
+                tick={{ fill: "var(--muted)", fontSize: 11 }}
+                tickFormatter={(v) => `${Math.round(v / 1000)}k`}
+              />
+              <ReferenceLine y={0} stroke="var(--danger)" strokeDasharray="4 4" />
+              <Tooltip
+                formatter={(v: number) => inr(v)}
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  color: "var(--text)",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="balance"
+                stroke="var(--accent)"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

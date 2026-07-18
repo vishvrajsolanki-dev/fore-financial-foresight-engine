@@ -1,3 +1,77 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg: #0b1020;
+  --bg-soft: #131a2e;
+  --card: #171f38;
+  --border: #26304f;
+  --text: #e8ecf7;
+  --muted: #9aa6c4;
+  --accent: #5b8cff;
+  --accent-2: #34d399;
+  --danger: #f87171;
+  --warn: #fbbf24;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: radial-gradient(1200px 600px at 20% -10%, #1a2b52 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border p-5;
+    background: var(--card);
+    border-color: var(--border);
+  }
+  .btn {
+    @apply rounded-xl px-4 py-2 font-medium transition-colors;
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn:hover {
+    filter: brightness(1.08);
+  }
+  .btn-ghost {
+    @apply rounded-xl px-3 py-2 font-medium transition-colors;
+    border: 1px solid var(--border);
+    color: var(--text);
+    background: transparent;
+  }
+  .input {
+    @apply rounded-xl px-3 py-2 w-full outline-none;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .input:focus {
+    border-color: var(--accent);
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium;
+    background: rgba(91, 140, 255, 0.15);
+    color: #b9ccff;
+    border: 1px solid rgba(91, 140, 255, 0.35);
+  }
+  .muted {
+    color: var(--muted);
+  }
+}
