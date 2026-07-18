@@ -11,7 +11,7 @@ export default function FaceIntro({
   blurb: string;
 }) {
   return (
-    <div className="card">
+    <div className="card rise-in">
       <p className="face-kicker">{face}</p>
       <p className="mt-1 text-lg font-semibold">{title}</p>
       <p className="muted mt-1 text-sm">{blurb}</p>

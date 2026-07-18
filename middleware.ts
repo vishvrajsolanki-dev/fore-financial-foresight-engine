@@ -18,9 +18,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/decide") ||
     pathname.startsWith("/ahead") ||
     pathname.startsWith("/api/context") ||
-    pathname.startsWith("/api/upload") ||
-    pathname.startsWith("/api/decide") ||
-    pathname.startsWith("/api/ml");
+    pathname.startsWith("/api/upload");
 
   if (!isProtected) {
     return NextResponse.next();
@@ -36,7 +34,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  // JWT signature verification runs in API routes (Node runtime). Middleware checks presence only.
   return NextResponse.next();
 }
 

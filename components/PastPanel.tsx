@@ -104,7 +104,9 @@ export default function PastPanel() {
           title="Your spending, decoded"
           blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
         />
-        <div className="card muted text-sm">No analysis yet — pick a persona above.</div>
+        <div className="card muted text-sm">
+          No analysis yet — upload a CSV above or pick a demo persona.
+        </div>
       </div>
     );
   }

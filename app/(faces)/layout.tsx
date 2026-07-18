@@ -1,9 +1,3 @@
-// FORE — app/(faces)/layout.tsx
-// Owner: TASK-002 (Drashti). 3-tab nav shell shared by PAST / DECIDE / AHEAD, plus the demo
-// persona switcher (so PAST/DECIDE/AHEAD all operate on one selected financial_context).
-// Consumed by: TASK-006 (shares this layout).
-// TASK-010: disclaimer visible on every face + nav/mobile consistency polish.
-
 "use client";
 
 import Link from "next/link";
@@ -45,8 +39,10 @@ export default function FacesLayout({
               guess.
             </p>
           </div>
-          <AuthNav />
-          <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
+          <div className="flex flex-wrap items-center gap-2">
+            <AuthNav />
+            <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
+          </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <label htmlFor="persona" className="muted text-sm whitespace-nowrap">
               Demo persona
@@ -97,24 +93,25 @@ export default function FacesLayout({
 
         <PersonaCompare />
 
-        {/* Visible on every face without scrolling — TASK-010 deliverable. */}
         <p className="disclaimer mt-4" role="note">
           {DISCLAIMER}
         </p>
       </header>
 
       <main className="flex-1">
-        {!activeId ? (
-          <div className="card py-12 text-center">
-            <p className="text-lg font-medium">Select a demo persona to begin</p>
+        {!activeId && pathname !== "/past" ? (
+          <div className="card rise-in py-12 text-center">
+            <p className="text-lg font-medium">No financial context yet</p>
             <p className="muted mt-1">
-              {fullStackEnabled
-                ? "Select a demo persona or upload your bank CSV on PAST."
-                : "Each persona has ~120 real-shaped transactions across 3 months."}
+              Upload your bank CSV on PAST, or select a demo persona above.
+              {!fullStackEnabled &&
+                " Each persona has ~120 real-shaped transactions across 3 months."}
             </p>
           </div>
         ) : (
-          children
+          <div key={pathname} className="rise-in">
+            {children}
+          </div>
         )}
       </main>
 
