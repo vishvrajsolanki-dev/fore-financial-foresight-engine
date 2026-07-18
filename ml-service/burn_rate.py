@@ -11,7 +11,7 @@
 from datetime import date, timedelta
 
 # Credits (money in) counted toward the running balance, never toward spend.
-_CREDIT_CATEGORIES = {"income", "salary", "credit", "refund", "cashback"}
+_CREDIT_CATEGORIES = {"income", "salary", "credit", "refund", "cashback", "opening_balance"}
 
 # If the trend line never crosses zero (balance flat or growing), the projection is capped at
 # 10 years out rather than claiming a real date — a straight-line trend has nothing honest to

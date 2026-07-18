@@ -58,7 +58,7 @@ _CATEGORY_MAP = {
 }
 
 # Credits (money in) are excluded from spend buckets — see burn_rate.py for the same convention.
-_CREDIT_CATEGORIES = {"income", "salary", "credit", "refund", "cashback"}
+_CREDIT_CATEGORIES = {"income", "salary", "credit", "refund", "cashback", "opening_balance"}
 
 _AVG_DAYS_PER_MONTH = 30.44
 
@@ -81,10 +81,13 @@ def build_feature_vector(transactions: list, monthly_income: float) -> dict:
     for txn in transactions:
         category = str(txn.get("category", "")).strip().lower()
         amount = float(txn.get("amount", 0))
-        if category in _CREDIT_CATEGORIES or amount < 0:
+        if category in _CREDIT_CATEGORIES:
             continue
+        # Both persona conventions in data/personas/ must classify identically: TASK-004's
+        # files record spends as positive amounts, the persona-*.json files record them as
+        # negative (signed) amounts. Spend magnitude is what the feature vector measures.
         bucket = _CATEGORY_MAP.get(category, "shopping")
-        buckets[bucket] += amount
+        buckets[bucket] += abs(amount)
         try:
             dates.append(_parse_date(txn["date"]))
         except (KeyError, ValueError, TypeError):
