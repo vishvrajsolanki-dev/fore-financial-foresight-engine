@@ -17,8 +17,14 @@ ARCHETYPES = {
     "Balanced Spender",
 }
 
-# Current demo personas (scripts/generate_data.py output).
-PERSONA_FILES = ["persona-priya", "persona-rahul", "persona-aisha"]
+# Current demo personas (scripts/generate_data.py output) — all 5 archetypes.
+PERSONA_FILES = [
+    "persona-priya",
+    "persona-rahul",
+    "persona-aisha",
+    "persona-riya",
+    "persona-arjun",
+]
 
 # CONTRACT-005 coverage grid (generate_data.py).
 INCOME_BRACKETS = ["0-25k", "25k-50k", "50k-75k", "75k-100k", "100k+"]
@@ -103,7 +109,11 @@ def verify_personas() -> None:
         fail("persona-priya signature category is not savings")
     if max(shares["persona-aisha"], key=shares["persona-aisha"].get) != "shopping":
         fail("persona-aisha signature category is not shopping")
-    ok("persona distinctness (share signatures) passed")
+    if max(shares["persona-riya"], key=shares["persona-riya"].get) != "entertainment":
+        fail("persona-riya signature category is not entertainment")
+    if max(shares["persona-arjun"], key=shares["persona-arjun"].get) != "bills":
+        fail("persona-arjun signature category is not bills (balanced profile)")
+    ok("persona distinctness (share signatures) passed — all 5 archetypes")
 
 
 def verify_benchmark() -> None:

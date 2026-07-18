@@ -67,7 +67,14 @@ DECIDE. Without a key, DECIDE uses a deterministic fallback that **still calls t
 Regenerate the synthetic data (rarely needed — it's checked in):
 
 ```bash
-python scripts/generate_data.py
+python3 scripts/generate_data.py
+npm run verify
+```
+
+Run the FORE_Blueprint §8 demo spine smoke test (requires ML service on :8000 and Next.js on :3000):
+
+```bash
+npm run smoke
 ```
 
 ## What's implemented (Tier 1 core)
