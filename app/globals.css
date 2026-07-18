@@ -36,6 +36,14 @@ a {
   text-decoration: none;
 }
 
+button:disabled,
+.btn:disabled,
+.btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
 @layer components {
   .card {
     @apply rounded-2xl border p-5;
@@ -47,7 +55,7 @@ a {
     background: var(--accent);
     color: #fff;
   }
-  .btn:hover {
+  .btn:hover:not(:disabled) {
     filter: brightness(1.08);
   }
   .btn-ghost {
@@ -55,6 +63,9 @@ a {
     border: 1px solid var(--border);
     color: var(--text);
     background: transparent;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--bg-soft);
   }
   .input {
     @apply rounded-xl px-3 py-2 w-full outline-none;
@@ -73,5 +84,16 @@ a {
   }
   .muted {
     color: var(--muted);
+  }
+  /* Shared face label — keeps PAST / DECIDE / AHEAD intros visually identical. */
+  .face-kicker {
+    @apply text-sm font-semibold uppercase tracking-[0.14em];
+    color: var(--accent-2);
+  }
+  .disclaimer {
+    @apply rounded-xl px-3 py-2 text-xs leading-relaxed;
+    color: var(--muted);
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.28);
   }
 }

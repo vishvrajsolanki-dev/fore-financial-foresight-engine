@@ -5,6 +5,10 @@ export default function Loading() {
   return (
     <div className="grid gap-4">
       <div className="card animate-pulse">
+        <div className="h-4 w-20 rounded" style={{ background: "var(--bg-soft)" }} />
+        <div className="mt-3 h-6 w-56 max-w-full rounded" style={{ background: "var(--bg-soft)" }} />
+      </div>
+      <div className="card animate-pulse">
         <div className="h-6 w-40 rounded" style={{ background: "var(--bg-soft)" }} />
         <div className="mt-4 h-20 rounded" style={{ background: "var(--bg-soft)" }} />
       </div>

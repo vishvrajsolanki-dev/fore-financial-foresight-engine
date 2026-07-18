@@ -22,6 +22,7 @@ import {
   ReferenceLine,
 } from "recharts";
 
+import FaceIntro from "@/components/FaceIntro";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 function inr(n: number): string {
@@ -53,24 +54,49 @@ export default function PastPanel() {
   }, [ctx?.transactions]);
 
   if (pastLoading) {
-    return <div className="card">Analysing spending profile…</div>;
+    return (
+      <div className="grid gap-4">
+        <FaceIntro
+          face="PAST"
+          title="Your spending, decoded"
+          blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+        />
+        <div className="card muted text-sm">Analysing spending profile…</div>
+      </div>
+    );
   }
   if (pastError) {
     return (
-      <div className="card">
-        <p className="font-medium" style={{ color: "var(--danger)" }}>
-          Couldn&apos;t load PAST data
-        </p>
-        <p className="muted mt-1 text-sm">{pastError}</p>
-        <p className="muted mt-2 text-sm">
-          Is the ML service running? Set <code>RENDER_ML_BASE_URL</code> (defaults to
-          http://127.0.0.1:8000).
-        </p>
+      <div className="grid gap-4">
+        <FaceIntro
+          face="PAST"
+          title="Your spending, decoded"
+          blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+        />
+        <div className="card">
+          <p className="font-medium" style={{ color: "var(--danger)" }}>
+            Couldn&apos;t load PAST data
+          </p>
+          <p className="muted mt-1 text-sm">{pastError}</p>
+          <p className="muted mt-2 text-sm">
+            Is the ML service running? Set <code>RENDER_ML_BASE_URL</code> (defaults to
+            http://127.0.0.1:8000).
+          </p>
+        </div>
       </div>
     );
   }
   if (!ctx?.archetype || !ctx?.burn_rate) {
-    return <div className="card">No analysis yet.</div>;
+    return (
+      <div className="grid gap-4">
+        <FaceIntro
+          face="PAST"
+          title="Your spending, decoded"
+          blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+        />
+        <div className="card muted text-sm">No analysis yet — pick a persona above.</div>
+      </div>
+    );
   }
 
   const { archetype, burn_rate } = ctx;
@@ -78,9 +104,14 @@ export default function PastPanel() {
 
   return (
     <div className="grid gap-4">
+      <FaceIntro
+        face="PAST"
+        title="Your spending, decoded"
+        blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+      />
       <div className="card">
         <p className="muted text-sm">Your spending archetype</p>
-        <div className="mt-2 flex items-center gap-3 flex-wrap">
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <span className="text-2xl font-bold">{archetype.label}</span>
           <span className="pill">nearest of 5 centroids</span>
         </div>
