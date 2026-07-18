@@ -1,0 +1,894 @@
+{
+  "persona": "maya_foodie",
+  "display_name": "Maya (The Foodie)",
+  "expected_archetype": "The Foodie",
+  "monthly_income": 72000,
+  "income_bracket": "\u20b960k\u2013\u20b91L",
+  "city_tier": "Tier-2",
+  "category_weights": {
+    "food": 0.4,
+    "shopping": 0.15,
+    "bills": 0.2,
+    "entertainment": 0.15,
+    "savings": 0.1
+  },
+  "transaction_count": 146,
+  "transactions": [
+    {
+      "date": "2026-04-18",
+      "category": "entertainment",
+      "amount": 874.29,
+      "description": "Concert / gig"
+    },
+    {
+      "date": "2026-04-18",
+      "category": "food",
+      "amount": 543.18,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-04-18",
+      "category": "food",
+      "amount": 1011.7,
+      "description": "Office canteen"
+    },
+    {
+      "date": "2026-04-18",
+      "category": "savings",
+      "amount": 1592.92,
+      "description": "Emergency fund"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 394.58,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 531.21,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 727.4,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 817.7,
+      "description": "Office canteen"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 855.51,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 994.27,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 999.76,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 1036.91,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 1066.65,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 1149.0,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": 1151.52,
+      "description": "Weekend brunch"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "savings",
+      "amount": 2026.54,
+      "description": "Recurring deposit"
+    },
+    {
+      "date": "2026-04-20",
+      "category": "bills",
+      "amount": 2399.04,
+      "description": "Rent / EMI"
+    },
+    {
+      "date": "2026-04-20",
+      "category": "bills",
+      "amount": 2760.05,
+      "description": "Insurance premium"
+    },
+    {
+      "date": "2026-04-20",
+      "category": "entertainment",
+      "amount": 684.58,
+      "description": "Movie tickets"
+    },
+    {
+      "date": "2026-04-20",
+      "category": "food",
+      "amount": 368.53,
+      "description": "Weekend brunch"
+    },
+    {
+      "date": "2026-04-20",
+      "category": "food",
+      "amount": 848.7,
+      "description": "Weekend brunch"
+    },
+    {
+      "date": "2026-04-21",
+      "category": "food",
+      "amount": 436.65,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-04-22",
+      "category": "entertainment",
+      "amount": 558.1,
+      "description": "Weekend outing"
+    },
+    {
+      "date": "2026-04-22",
+      "category": "entertainment",
+      "amount": 905.26,
+      "description": "Movie tickets"
+    },
+    {
+      "date": "2026-04-24",
+      "category": "shopping",
+      "amount": 1517.8,
+      "description": "Home essentials"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "food",
+      "amount": 636.9,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "food",
+      "amount": 795.06,
+      "description": "Weekend brunch"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "food",
+      "amount": 1089.49,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "shopping",
+      "amount": 661.96,
+      "description": "Myntra haul"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "shopping",
+      "amount": 999.52,
+      "description": "Home essentials"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "bills",
+      "amount": 2031.89,
+      "description": "Society maintenance"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "food",
+      "amount": 466.77,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "food",
+      "amount": 589.17,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "food",
+      "amount": 773.64,
+      "description": "Office canteen"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "food",
+      "amount": 850.52,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "food",
+      "amount": 993.33,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "food",
+      "amount": 1054.62,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "shopping",
+      "amount": 685.61,
+      "description": "Amazon order"
+    },
+    {
+      "date": "2026-04-27",
+      "category": "food",
+      "amount": 367.88,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-04-27",
+      "category": "food",
+      "amount": 545.64,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-04-28",
+      "category": "food",
+      "amount": 380.59,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-04-29",
+      "category": "food",
+      "amount": 964.91,
+      "description": "Weekend brunch"
+    },
+    {
+      "date": "2026-04-29",
+      "category": "food",
+      "amount": 1021.15,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-01",
+      "category": "bills",
+      "amount": 2819.11,
+      "description": "Electricity bill"
+    },
+    {
+      "date": "2026-05-01",
+      "category": "savings",
+      "amount": 3011.34,
+      "description": "Recurring deposit"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "bills",
+      "amount": 3690.8,
+      "description": "Society maintenance"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "food",
+      "amount": 404.2,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "food",
+      "amount": 857.73,
+      "description": "Office canteen"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "food",
+      "amount": 833.19,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "food",
+      "amount": 949.95,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "food",
+      "amount": 1128.05,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "shopping",
+      "amount": 639.11,
+      "description": "Impulse cart"
+    },
+    {
+      "date": "2026-05-04",
+      "category": "entertainment",
+      "amount": 766.81,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-05-04",
+      "category": "food",
+      "amount": 1011.6,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-05-05",
+      "category": "bills",
+      "amount": 3552.48,
+      "description": "Society maintenance"
+    },
+    {
+      "date": "2026-05-05",
+      "category": "savings",
+      "amount": 1913.55,
+      "description": "Recurring deposit"
+    },
+    {
+      "date": "2026-05-06",
+      "category": "shopping",
+      "amount": 1334.86,
+      "description": "Electronics accessory"
+    },
+    {
+      "date": "2026-05-07",
+      "category": "bills",
+      "amount": 1252.19,
+      "description": "Water bill"
+    },
+    {
+      "date": "2026-05-07",
+      "category": "entertainment",
+      "amount": 371.96,
+      "description": "Club / hangout"
+    },
+    {
+      "date": "2026-05-07",
+      "category": "entertainment",
+      "amount": 1035.99,
+      "description": "Streaming renewals"
+    },
+    {
+      "date": "2026-05-08",
+      "category": "entertainment",
+      "amount": 904.99,
+      "description": "Weekend outing"
+    },
+    {
+      "date": "2026-05-09",
+      "category": "food",
+      "amount": 452.32,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-09",
+      "category": "food",
+      "amount": 844.87,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-10",
+      "category": "food",
+      "amount": 459.28,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-05-10",
+      "category": "food",
+      "amount": 998.94,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-10",
+      "category": "food",
+      "amount": 999.58,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-05-10",
+      "category": "food",
+      "amount": 1107.04,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-11",
+      "category": "food",
+      "amount": 440.43,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-11",
+      "category": "food",
+      "amount": 629.64,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-12",
+      "category": "food",
+      "amount": 625.91,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-05-13",
+      "category": "food",
+      "amount": 815.47,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "food",
+      "amount": 348.1,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "food",
+      "amount": 550.07,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "food",
+      "amount": 1143.22,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-17",
+      "category": "entertainment",
+      "amount": 378.63,
+      "description": "Movie tickets"
+    },
+    {
+      "date": "2026-05-17",
+      "category": "food",
+      "amount": 904.71,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-17",
+      "category": "food",
+      "amount": 941.07,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-05-17",
+      "category": "food",
+      "amount": 992.15,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-05-17",
+      "category": "food",
+      "amount": 1028.24,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-05-18",
+      "category": "entertainment",
+      "amount": 922.8,
+      "description": "Club / hangout"
+    },
+    {
+      "date": "2026-05-21",
+      "category": "shopping",
+      "amount": 935.25,
+      "description": "Home essentials"
+    },
+    {
+      "date": "2026-05-22",
+      "category": "food",
+      "amount": 828.22,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-05-23",
+      "category": "food",
+      "amount": 919.52,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-05-23",
+      "category": "shopping",
+      "amount": 2088.12,
+      "description": "Local market"
+    },
+    {
+      "date": "2026-05-24",
+      "category": "food",
+      "amount": 402.38,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-25",
+      "category": "food",
+      "amount": 1052.97,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-30",
+      "category": "food",
+      "amount": 996.33,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-05-30",
+      "category": "food",
+      "amount": 1067.03,
+      "description": "Office canteen"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "food",
+      "amount": 357.83,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "food",
+      "amount": 598.97,
+      "description": "Weekend brunch"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "food",
+      "amount": 672.64,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "food",
+      "amount": 1002.11,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "shopping",
+      "amount": 937.26,
+      "description": "Myntra haul"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "shopping",
+      "amount": 2058.57,
+      "description": "Impulse cart"
+    },
+    {
+      "date": "2026-06-01",
+      "category": "bills",
+      "amount": 3570.05,
+      "description": "Electricity bill"
+    },
+    {
+      "date": "2026-06-02",
+      "category": "bills",
+      "amount": 2751.5,
+      "description": "Rent / EMI"
+    },
+    {
+      "date": "2026-06-02",
+      "category": "food",
+      "amount": 658.04,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-02",
+      "category": "savings",
+      "amount": 3737.87,
+      "description": "Liquid fund sweep"
+    },
+    {
+      "date": "2026-06-03",
+      "category": "food",
+      "amount": 1034.01,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-06-03",
+      "category": "food",
+      "amount": 1138.06,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "bills",
+      "amount": 1303.88,
+      "description": "Electricity bill"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "bills",
+      "amount": 2342.66,
+      "description": "Society maintenance"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "savings",
+      "amount": 2613.6,
+      "description": "Recurring deposit"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "shopping",
+      "amount": 1105.24,
+      "description": "Local market"
+    },
+    {
+      "date": "2026-06-06",
+      "category": "entertainment",
+      "amount": 1106.52,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-06-06",
+      "category": "food",
+      "amount": 345.24,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-06-07",
+      "category": "food",
+      "amount": 797.05,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-06-07",
+      "category": "food",
+      "amount": 921.47,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-06-09",
+      "category": "food",
+      "amount": 992.96,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-06-10",
+      "category": "food",
+      "amount": 663.85,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-06-10",
+      "category": "food",
+      "amount": 1137.53,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-11",
+      "category": "entertainment",
+      "amount": 481.92,
+      "description": "Weekend outing"
+    },
+    {
+      "date": "2026-06-12",
+      "category": "food",
+      "amount": 633.45,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-12",
+      "category": "food",
+      "amount": 699.5,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "food",
+      "amount": 658.96,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "food",
+      "amount": 743.67,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "food",
+      "amount": 980.14,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "food",
+      "amount": 996.19,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "food",
+      "amount": 1125.06,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-06-14",
+      "category": "food",
+      "amount": 404.98,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-14",
+      "category": "food",
+      "amount": 729.02,
+      "description": "Grocery run"
+    },
+    {
+      "date": "2026-06-14",
+      "category": "food",
+      "amount": 732.13,
+      "description": "Office canteen"
+    },
+    {
+      "date": "2026-06-18",
+      "category": "food",
+      "amount": 435.63,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-18",
+      "category": "shopping",
+      "amount": 996.38,
+      "description": "Impulse cart"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "food",
+      "amount": 741.7,
+      "description": "Street chaat"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "shopping",
+      "amount": 816.77,
+      "description": "Home essentials"
+    },
+    {
+      "date": "2026-06-20",
+      "category": "entertainment",
+      "amount": 255.35,
+      "description": "Streaming renewals"
+    },
+    {
+      "date": "2026-06-20",
+      "category": "entertainment",
+      "amount": 531.35,
+      "description": "Streaming renewals"
+    },
+    {
+      "date": "2026-06-20",
+      "category": "food",
+      "amount": 622.99,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-20",
+      "category": "food",
+      "amount": 1013.53,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "entertainment",
+      "amount": 700.69,
+      "description": "Club / hangout"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food",
+      "amount": 368.42,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food",
+      "amount": 502.09,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food",
+      "amount": 721.09,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food",
+      "amount": 770.42,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food",
+      "amount": 1012.94,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-22",
+      "category": "shopping",
+      "amount": 1316.57,
+      "description": "Local market"
+    },
+    {
+      "date": "2026-06-22",
+      "category": "shopping",
+      "amount": 1454.47,
+      "description": "Home essentials"
+    },
+    {
+      "date": "2026-06-23",
+      "category": "food",
+      "amount": 900.23,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-24",
+      "category": "food",
+      "amount": 1001.0,
+      "description": "Swiggy lunch"
+    },
+    {
+      "date": "2026-06-27",
+      "category": "food",
+      "amount": 617.18,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-06-27",
+      "category": "food",
+      "amount": 721.04,
+      "description": "Meal kit"
+    },
+    {
+      "date": "2026-06-27",
+      "category": "food",
+      "amount": 839.92,
+      "description": "Office canteen"
+    },
+    {
+      "date": "2026-06-28",
+      "category": "food",
+      "amount": 964.37,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-28",
+      "category": "food",
+      "amount": 970.82,
+      "description": "Cafe latte"
+    },
+    {
+      "date": "2026-06-30",
+      "category": "entertainment",
+      "amount": 430.47,
+      "description": "Movie tickets"
+    }
+  ]
+}
