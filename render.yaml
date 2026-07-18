@@ -1,0 +1,14 @@
+# FORE — Render Blueprint for the Python ML service (CONTRACT-006).
+# Always-on instance (not free/spin-down) so canIAfford()'s critical path never hits a cold start.
+services:
+  - type: web
+    name: fore-ml
+    runtime: python
+    plan: starter # always-on tier — do NOT use "free" (spins down on idle, defeats the purpose)
+    rootDir: ml-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false # set to your Vercel domain(s) in the Render dashboard
