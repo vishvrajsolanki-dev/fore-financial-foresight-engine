@@ -39,8 +39,13 @@ interface DecideVerdict {
 }
 
 // --- Keyless fallback: still honours the contract (real canIAfford call), just without the LLM. ---
-const AMOUNT_RE = /(?:₹|rs\.?|inr)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(k|thousand|lakh|l)?/i;
-const AFFORD_INTENT_RE = /(afford|buy|purchase|spend|get a|should i|can i)/i;
+// Unit suffixes are matched only as whole tokens (k/thousand/lakh/cr), so the "l" in "laptop"
+// is never mistaken for "lakh". Amount is capped to a sane ceiling.
+const AMOUNT_RE =
+  /(?:₹|rs\.?|inr)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(k|thousand|lakhs?|lac|cr|crores?)?(?![a-z])/i;
+const AFFORD_INTENT_RE = /(afford|buy|purchase|spend|should i|can i|get)/i;
+const TRAILING_FILLER_RE =
+  /\s+(next|this|last)?\s*(month|week|year|now|today|please|instead|for|at|in|on)\b.*$/i;
 
 function parseAmount(message: string): number | null {
   const m = message.match(AMOUNT_RE);
@@ -48,13 +53,28 @@ function parseAmount(message: string): number | null {
   let n = parseFloat(m[1].replace(/,/g, ""));
   const unit = (m[2] || "").toLowerCase();
   if (unit === "k" || unit === "thousand") n *= 1000;
-  if (unit === "lakh" || unit === "l") n *= 100000;
-  return Number.isFinite(n) ? n : null;
+  else if (unit.startsWith("lakh") || unit === "lac") n *= 100000;
+  else if (unit === "cr" || unit.startsWith("crore")) n *= 10000000;
+  if (!Number.isFinite(n) || n <= 0 || n > 1e8) return null;
+  return n;
+}
+
+function clean(item: string): string {
+  return item.trim().replace(TRAILING_FILLER_RE, "").replace(/[.?!,]+$/, "").trim() || "this expense";
 }
 
 function guessItem(message: string): string {
-  const m = message.match(/(?:afford|buy|purchase|get)(?:\s+an?|\s+the)?\s+([a-z][a-z\s-]{1,30})/i);
-  return m ? m[1].trim().replace(/\s+(next|this|for|at|in)\b.*$/i, "").trim() : "this expense";
+  // Item named right after the amount: "... 15000 laptop", "buy ₹5,000 headphones".
+  let m = message.match(
+    /[0-9][0-9,]*(?:\.[0-9]+)?\s*(?:k|thousand|lakhs?|lac|cr|crores?|rupees?|rs\.?|₹)?\s+(?:on\s+|for\s+)?(?:an?\s+|the\s+)?([a-z][a-z\s-]{1,25})/i
+  );
+  if (m) return clean(m[1]);
+  // Item named before the amount: "a laptop for 15000".
+  m = message.match(
+    /(?:afford|buy|purchase|get)\s+(?:an?\s+|the\s+)?([a-z][a-z\s-]{1,25}?)\s+(?:for|at|costing|worth|,)?\s*(?:₹|rs\.?|inr)?\s*[0-9]/i
+  );
+  if (m) return clean(m[1]);
+  return "this expense";
 }
 
 async function fallbackDecide(message: string, transactions: Transaction[]) {

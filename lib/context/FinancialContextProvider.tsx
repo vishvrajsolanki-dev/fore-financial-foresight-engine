@@ -124,10 +124,17 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
     // date so the goal pace reflects the decision immediately (no stale "three screens").
     setCtx((prev) => {
       if (!prev) return prev;
+      // Store only the CONTRACT-001 fields (drop any extras like `affordable` the API may add).
+      const stored: DecideVerdict = {
+        item: verdict.item,
+        amount: verdict.amount,
+        day_shift: verdict.day_shift,
+        new_zero_balance_date: verdict.new_zero_balance_date,
+      };
       const burn_rate = prev.burn_rate
         ? { ...prev.burn_rate, projected_zero_balance_date: verdict.new_zero_balance_date }
         : prev.burn_rate;
-      return { ...prev, last_decide_verdict: verdict, burn_rate };
+      return { ...prev, last_decide_verdict: stored, burn_rate };
     });
   }, []);
 
