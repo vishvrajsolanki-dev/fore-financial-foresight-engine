@@ -1,6 +1,6 @@
 import { decryptField, encryptField } from "@/lib/security/encryption";
 import { computeBenchmark } from "@/lib/benchmark/computeBenchmark";
-import { getPastData } from "@/lib/api/pastClient";
+import { callMl } from "@/lib/api/mlServer";
 import { prisma } from "@/lib/db/prisma";
 import type { ArchetypeLabel, FinancialContext, Transaction } from "@/types/financialContext";
 
@@ -54,6 +54,22 @@ export async function sessionToContext(sessionId: string): Promise<FinancialCont
   };
 }
 
+async function getPastDataServer(transactions: Transaction[], monthlyIncome: number) {
+  const [classifyRes, burnRes] = await Promise.all([
+    callMl<{ label: ArchetypeLabel; distances: Record<string, number> }>("/classify", {
+      transactions,
+      monthly_income: monthlyIncome,
+    }),
+    callMl<NonNullable<FinancialContext["burn_rate"]>>("/burn-rate", { transactions }),
+  ]);
+  if (!classifyRes.ok) throw new Error(classifyRes.error);
+  if (!burnRes.ok) throw new Error(burnRes.error);
+  return {
+    archetype: { label: classifyRes.data.label, distances: classifyRes.data.distances },
+    burn_rate: burnRes.data,
+  };
+}
+
 export async function computeAndPersistPast(
   sessionId: string,
   transactions: Transaction[],
@@ -61,7 +77,7 @@ export async function computeAndPersistPast(
   incomeBracket: string,
   cityTier: string
 ) {
-  const past = await getPastData(transactions, monthlyIncome);
+  const past = await getPastDataServer(transactions, monthlyIncome);
   if (!past.archetype || !past.burn_rate) {
     throw new Error("PAST computation failed — archetype or burn rate missing");
   }
