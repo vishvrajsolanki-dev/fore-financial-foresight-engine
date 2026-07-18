@@ -19,5 +19,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "ml-service"]
+  "exclude": ["node_modules", "ml-service", "scripts/unit_tests.ts", "scripts/fullstack_tests.ts"]
 }

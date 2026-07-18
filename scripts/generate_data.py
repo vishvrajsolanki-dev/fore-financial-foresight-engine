@@ -74,6 +74,30 @@ PERSONAS = [
         "split": {"food": 0.19, "shopping": 0.37, "bills": 0.19, "entertainment": 0.20, "savings": 0.05},
         "seed": 33,
     },
+    {
+        "session_id": "persona-riya",
+        "persona": "Riya — the Social Butterfly",
+        "archetype_intended": "Social Butterfly",
+        "monthly_income": 68000,
+        "opening_balance": 55000,
+        "spend_fraction": 0.88,
+        "income_bracket": "50k-75k",
+        "city_tier": "Tier 2",
+        "split": {"food": 0.18, "shopping": 0.14, "bills": 0.22, "entertainment": 0.38, "savings": 0.08},
+        "seed": 44,
+    },
+    {
+        "session_id": "persona-arjun",
+        "persona": "Arjun — the Balanced Spender",
+        "archetype_intended": "Balanced Spender",
+        "monthly_income": 85000,
+        "opening_balance": 90000,
+        "spend_fraction": 0.78,
+        "income_bracket": "75k-100k",
+        "city_tier": "Tier 1",
+        "split": {"food": 0.21, "shopping": 0.16, "bills": 0.27, "entertainment": 0.13, "savings": 0.23},
+        "seed": 55,
+    },
 ]
 
 # Roughly how many transactions per month per category (frequency patterns differ by archetype).

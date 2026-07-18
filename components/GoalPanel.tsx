@@ -6,7 +6,11 @@
 "use client";
 
 import { useState } from "react";
-import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
+import {
+  computeGoal,
+  purchaseDailyBurn,
+  useFinancialContext,
+} from "@/lib/context/FinancialContextProvider";
 
 function inr(n: number): string {
   return "₹" + Math.round(n).toLocaleString("en-IN");
@@ -24,6 +28,20 @@ export default function GoalPanel() {
   const burnReady = ctx.burn_rate != null;
 
   const pastDate = new Date(date) <= new Date();
+
+  const goalImpactDays =
+    goal && verdict && ctx.burn_rate && goal.pace_gap_days != null
+      ? (() => {
+          const baseline = computeGoal(
+            goal.target_amount,
+            goal.target_date,
+            ctx.monthly_income,
+            ctx.burn_rate.daily_avg
+          );
+          if (baseline?.pace_gap_days == null) return null;
+          return goal.pace_gap_days - baseline.pace_gap_days;
+        })()
+      : null;
 
   return (
     <div className="card">
@@ -118,6 +136,13 @@ export default function GoalPanel() {
                 ? `You're on track — about ${Math.abs(goal.pace_gap_days)} day(s) of buffer at your current savings rate.`
                 : `You're roughly ${goal.pace_gap_days} day(s) behind at your current savings rate.`}
           </p>
+          {verdict && goalImpactDays != null && goalImpactDays > 0 && (
+            <p className="text-sm" style={{ color: "var(--warn)" }}>
+              After {verdict.item} ({inr(verdict.amount)}), you&apos;re about {goalImpactDays} day
+              {goalImpactDays === 1 ? "" : "s"} further from this goal — the pace above already
+              includes that purchase (≈{inr(purchaseDailyBurn(verdict.amount) * 30)}/mo extra burn).
+            </p>
+          )}
         </div>
       )}
 

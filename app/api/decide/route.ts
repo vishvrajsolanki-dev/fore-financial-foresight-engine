@@ -15,7 +15,7 @@ import {
   canIAfford,
   type CanIAffordOutput,
 } from "@/lib/tools/canIAfford";
-import type { Transaction } from "@/types/financialContext";
+import type { FinancialContext, Transaction } from "@/types/financialContext";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +28,28 @@ a clear item to buy), you MUST call the canIAfford tool and base your entire ans
 returned values (affordable, day_shift, new_zero_balance_date, explanation). Never invent or state
 a day-shift, date, or affordability judgement yourself — only report what the tool returns.
 For greetings or messages that are not about affording something, reply briefly and do NOT call the
-tool. Keep answers concise and friendly.`;
+tool. When answering follow-ups about goals, archetype, or peer spending, use ONLY the financial
+context JSON provided below — never invent numbers. Keep answers concise and friendly.`;
+
+/** Serialize spine fields for direct context injection (no vector DB). */
+function buildSystemPrompt(financialContext: Partial<FinancialContext> | null): string {
+  if (!financialContext) return SYSTEM_PROMPT;
+
+  const spine = {
+    persona: financialContext.persona,
+    monthly_income: financialContext.monthly_income,
+    archetype: financialContext.archetype,
+    burn_rate: financialContext.burn_rate,
+    goal: financialContext.goal,
+    benchmark: financialContext.benchmark,
+    last_decide_verdict: financialContext.last_decide_verdict,
+  };
+
+  return `${SYSTEM_PROMPT}
+
+The user's current financial_context (real computed values — cite these when relevant):
+${JSON.stringify(spine, null, 2)}`;
+}
 
 interface DecideVerdict {
   item: string;
@@ -176,6 +197,10 @@ export async function POST(req: NextRequest) {
   const message: unknown = body?.message;
   const transactions: Transaction[] = Array.isArray(body?.transactions) ? body.transactions : [];
   const history = sanitizeHistory(body?.history);
+  const financialContext: Partial<FinancialContext> | null =
+    body?.financial_context && typeof body.financial_context === "object"
+      ? body.financial_context
+      : null;
 
   if (!message || typeof message !== "string") {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
@@ -187,6 +212,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const systemPrompt = buildSystemPrompt(financialContext);
+
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return fallbackDecide(message, transactions, history);
@@ -195,7 +222,7 @@ export async function POST(req: NextRequest) {
   try {
     const groq = new Groq({ apiKey });
     const messages: Groq.Chat.ChatCompletionMessageParam[] = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       ...history.map((t) => ({ role: t.role, content: t.content })),
       { role: "user", content: message },
     ];

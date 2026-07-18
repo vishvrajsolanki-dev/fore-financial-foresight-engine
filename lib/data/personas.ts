@@ -7,6 +7,8 @@ import type { Transaction } from "@/types/financialContext";
 import priya from "@/data/personas/persona-priya.json";
 import rahul from "@/data/personas/persona-rahul.json";
 import aisha from "@/data/personas/persona-aisha.json";
+import riya from "@/data/personas/persona-riya.json";
+import arjun from "@/data/personas/persona-arjun.json";
 
 export interface PersonaSeed {
   session_id: string;
@@ -22,6 +24,8 @@ export const PERSONAS: PersonaSeed[] = [
   priya as PersonaSeed,
   rahul as PersonaSeed,
   aisha as PersonaSeed,
+  riya as PersonaSeed,
+  arjun as PersonaSeed,
 ];
 
 export function getPersona(sessionId: string): PersonaSeed | undefined {
