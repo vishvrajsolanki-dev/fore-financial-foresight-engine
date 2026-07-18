@@ -26,43 +26,46 @@ export default function FacesLayout({
     useFinancialContext();
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6">
-      <header className="mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-8 sm:py-10">
+      <header className="app-header rise-in mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              FORE{" "}
-              <span className="muted font-normal">· Financial Foresight Engine</span>
-            </h1>
-            <p className="muted mt-1 text-sm">
-              One financial context, three linked views — the model runs real math, never a
-              guess.
+            <p className="fore-brand text-2xl sm:text-3xl">
+              F<span style={{ color: "var(--accent)" }}>O</span>RE
+            </p>
+            <p className="muted mt-1 max-w-md text-sm leading-relaxed">
+              One platform, three linked faces on a shared data spine — your past decoded,
+              decisions grounded, goals paced.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <AuthNav />
             <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <label htmlFor="persona" className="muted text-sm whitespace-nowrap">
-              Demo persona
-            </label>
-            <select
-              id="persona"
-              className="input max-w-[16rem]"
-              value={activeId ?? ""}
-              onChange={(e) => selectPersona(e.target.value)}
-            >
-              <option value="" disabled>
-                Select a persona…
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
+          <label htmlFor="persona" className="muted text-sm whitespace-nowrap">
+            Demo persona
+          </label>
+          <select
+            id="persona"
+            className="input max-w-[16rem]"
+            value={activeId ?? ""}
+            onChange={(e) => selectPersona(e.target.value)}
+          >
+            <option value="" disabled>
+              Select a persona…
+            </option>
+            {personas.map((p) => (
+              <option key={p.session_id} value={p.session_id}>
+                {p.persona}
               </option>
-              {personas.map((p) => (
-                <option key={p.session_id} value={p.session_id}>
-                  {p.persona}
-                </option>
-              ))}
-            </select>
-          </div>
+            ))}
+          </select>
+          {ctx?.persona && (
+            <span className="pill hidden sm:inline-flex">{ctx.persona}</span>
+          )}
         </div>
 
         <nav className="mt-5 flex flex-wrap gap-2" aria-label="FORE faces">
@@ -72,18 +75,10 @@ export default function FacesLayout({
               <Link
                 key={t.href}
                 href={t.href}
-                className={`rounded-xl border px-3 py-2 transition-colors sm:px-4 ${
-                  active
-                    ? "border-transparent bg-[var(--accent)] text-white"
-                    : "border-[var(--border)] hover:bg-[var(--bg-soft)]"
-                }`}
+                className={`face-tab ${active ? "face-tab-active" : ""}`}
               >
-                <span className="font-semibold">{t.label}</span>
-                <span
-                  className={`ml-2 hidden text-xs sm:inline ${
-                    active ? "text-white/80" : "muted"
-                  }`}
-                >
+                <span>{t.label}</span>
+                <span className={`face-tab-hint ml-2 hidden text-xs sm:inline ${active ? "" : "muted"}`}>
                   {t.hint}
                 </span>
               </Link>
@@ -103,7 +98,11 @@ export default function FacesLayout({
           <div className="card rise-in py-12 text-center">
             <p className="text-lg font-medium">No financial context yet</p>
             <p className="muted mt-1">
-              Upload your bank CSV on PAST, or select a demo persona above.
+              Upload your bank CSV on{" "}
+              <Link href="/past" className="underline" style={{ color: "var(--accent)" }}>
+                PAST
+              </Link>
+              , or select a demo persona above.
               {!fullStackEnabled &&
                 " Each persona has ~120 real-shaped transactions across 3 months."}
             </p>
@@ -118,7 +117,11 @@ export default function FacesLayout({
       <footer className="mt-10 border-t border-[var(--border)] pt-4 pb-2">
         <p className="muted text-xs">
           {ctx?.persona ? `Active context: ${ctx.persona}. ` : ""}
-          {DISCLAIMER}
+          {!authUser && fullStackEnabled && "Browsing in demo mode — "}
+          <Link href="/login" className="underline">
+            Sign in
+          </Link>{" "}
+          for saved sessions.
         </p>
       </footer>
     </div>

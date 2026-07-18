@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function FeatureToolbar({ currency, onCurrencyChange }: Props) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     const saved = localStorage.getItem("fore_theme") as Theme | null;

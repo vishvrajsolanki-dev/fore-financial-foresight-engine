@@ -170,6 +170,35 @@ button:disabled,
     background: rgba(222, 91, 50, 0.12);
     color: var(--accent);
   }
+
+  /* --- App shell (PAST / DECIDE / AHEAD) — matches login Warm Ledger --- */
+  .fore-brand {
+    @apply font-bold tracking-[0.12em];
+  }
+  .app-header {
+    @apply rounded-2xl border p-5 sm:p-6;
+    background: linear-gradient(150deg, var(--card) 0%, #faf0e4 55%, #f6e3d3 100%);
+    border-color: var(--border);
+  }
+  .face-tab {
+    @apply rounded-xl border px-3 py-2 font-semibold transition-all duration-200 sm:px-4;
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .face-tab:hover:not(.face-tab-active) {
+    background: var(--bg-soft);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(80, 60, 40, 0.06);
+  }
+  .face-tab-active {
+    border-color: transparent;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(150, 60, 30, 0.2), 0 6px 16px rgba(222, 91, 50, 0.28);
+  }
+  .face-tab-active .face-tab-hint {
+    color: rgba(255, 255, 255, 0.82);
+  }
 }
 
 /* --- Motion system (Warm Ledger) ---
