@@ -210,3 +210,9 @@ before handing off, not just against the placeholder shape.
 7. Squash merge after review → delete branch
 
 Domain prefixes: `FE` (Drashti), `ML` (Vishvraj), `BE` (Allen). Kavya commits under the owning domain's branch when pairing — no separate `KV` prefix, ownership stays with the named task owner.
+
+## Pinned dependencies (exact versions)
+| Package | Version | Added by |
+|---|---|---|
+| `eslint` | `8.57.0` | TASK-004 (dev lint tooling so `next lint` is non-interactive) |
+| `eslint-config-next` | `14.2.5` | TASK-004 (matches locked `next@14.2.5`) |
