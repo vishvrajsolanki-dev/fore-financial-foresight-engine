@@ -14,8 +14,16 @@ import {
 } from "react";
 
 import { getPastData } from "@/lib/api/pastClient";
+import { startTokenRefreshLoop } from "@/lib/auth/refreshClient";
 import { computeBenchmark } from "@/lib/benchmark/computeBenchmark";
 import { PERSONAS, getPersona, type PersonaSeed } from "@/lib/data/personas";
+import { features } from "@/lib/features";
+import type { CurrencyCode } from "@/lib/format/currency";
+import {
+  clearContextStorage,
+  loadContextFromStorage,
+  saveContextToStorage,
+} from "@/lib/storage/contextStorage";
 import type { FinancialContext } from "@/types/financialContext";
 
 type DecideVerdict = NonNullable<FinancialContext["last_decide_verdict"]>;
@@ -40,6 +48,8 @@ interface FinancialContextValue {
   pastError: string | null;
   fullStackEnabled: boolean;
   authUser: AuthUser | null;
+  currency: CurrencyCode;
+  setCurrency: (c: CurrencyCode) => void;
   selectPersona: (sessionId: string) => Promise<void>;
   setGoal: (targetAmount: number, targetDate: string) => void;
   applyDecideVerdict: (verdict: DecideVerdict) => void;
@@ -116,6 +126,31 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
   const [pastError, setPastError] = useState<string | null>(null);
   const [fullStackEnabled, setFullStackEnabled] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [currency, setCurrency] = useState<CurrencyCode>("INR");
+
+  useEffect(() => {
+    if (features.browserStorage) {
+      const stored = loadContextFromStorage();
+      if (stored) {
+        setCtx(stored);
+        setActiveId(stored.session_id);
+      }
+    }
+    const savedCurrency = localStorage.getItem("fore_currency") as CurrencyCode | null;
+    if (savedCurrency === "INR" || savedCurrency === "USD" || savedCurrency === "EUR") {
+      setCurrency(savedCurrency);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (ctx && features.browserStorage && !fullStackEnabled) {
+      saveContextToStorage(ctx);
+    }
+  }, [ctx, fullStackEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem("fore_currency", currency);
+  }, [currency]);
 
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
@@ -130,8 +165,15 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
           }
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Auth check failed:", err);
+      });
   }, []);
+
+  useEffect(() => {
+    if (!fullStackEnabled || !authUser) return;
+    return startTokenRefreshLoop(true);
+  }, [fullStackEnabled, authUser]);
 
   const loadClientPersona = useCallback(async (sessionId: string, seed: PersonaSeed) => {
     const base = baseContext(seed);
@@ -275,6 +317,7 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
     setAuthUser(null);
     setCtx(null);
     setActiveId(null);
+    if (features.browserStorage) clearContextStorage();
   }, []);
 
   const value = useMemo<FinancialContextValue>(
@@ -286,6 +329,8 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       pastError,
       fullStackEnabled,
       authUser,
+      currency,
+      setCurrency,
       selectPersona,
       setGoal,
       applyDecideVerdict,
@@ -299,6 +344,7 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       pastError,
       fullStackEnabled,
       authUser,
+      currency,
       selectPersona,
       setGoal,
       applyDecideVerdict,

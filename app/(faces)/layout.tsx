@@ -9,6 +9,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AuthNav from "@/components/AuthNav";
+import FeatureToolbar from "@/components/FeatureToolbar";
+import PersonaCompare from "@/components/PersonaCompare";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 const TABS = [
@@ -26,7 +28,8 @@ export default function FacesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { personas, activeId, ctx, selectPersona, fullStackEnabled, authUser } = useFinancialContext();
+  const { personas, activeId, ctx, selectPersona, fullStackEnabled, authUser, currency, setCurrency } =
+    useFinancialContext();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6">
@@ -43,6 +46,7 @@ export default function FacesLayout({
             </p>
           </div>
           <AuthNav />
+          <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <label htmlFor="persona" className="muted text-sm whitespace-nowrap">
               Demo persona
@@ -90,6 +94,8 @@ export default function FacesLayout({
             );
           })}
         </nav>
+
+        <PersonaCompare />
 
         {/* Visible on every face without scrolling — TASK-010 deliverable. */}
         <p className="disclaimer mt-4" role="note">

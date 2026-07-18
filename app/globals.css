@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root,
+html[data-theme="dark"] {
   --bg: #0b1020;
   --bg-soft: #131a2e;
   --card: #171f38;
@@ -15,6 +16,19 @@
   --warn: #fbbf24;
 }
 
+html[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg-soft: #e8ecf4;
+  --card: #ffffff;
+  --border: #d0d7e6;
+  --text: #1a2236;
+  --muted: #5c6b8a;
+  --accent: #3b6ef5;
+  --accent-2: #059669;
+  --danger: #dc2626;
+  --warn: #d97706;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -23,12 +37,19 @@ html,
 body {
   padding: 0;
   margin: 0;
-  background: radial-gradient(1200px 600px at 20% -10%, #1a2b52 0%, transparent 60%),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   min-height: 100vh;
+}
+
+html[data-theme="dark"] body {
+  background: radial-gradient(1200px 600px at 20% -10%, #1a2b52 0%, transparent 60%), var(--bg);
+}
+
+html[data-theme="light"] body {
+  background: radial-gradient(1200px 600px at 80% -10%, #dbeafe 0%, transparent 60%), var(--bg);
 }
 
 a {

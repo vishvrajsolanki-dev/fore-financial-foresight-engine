@@ -5,20 +5,47 @@ import json
 import sys
 import urllib.error
 import urllib.request
+from http.cookiejar import CookieJar
 
 BASE = "http://127.0.0.1:3000"
 ML = "http://127.0.0.1:8000"
 
 
-def post(url: str, payload: dict) -> dict:
+def make_opener() -> urllib.request.OpenerDirector:
+    jar = CookieJar()
+    return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+
+
+def post(url: str, payload: dict, opener: urllib.request.OpenerDirector | None = None) -> dict:
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=15) as resp:
+    open_fn = opener.open if opener else urllib.request.urlopen
+    with open_fn(req, timeout=30) as resp:
         return json.loads(resp.read())
+
+
+def get(url: str, opener: urllib.request.OpenerDirector) -> dict:
+    req = urllib.request.Request(url, method="GET")
+    with opener.open(req, timeout=15) as resp:
+        return json.loads(resp.read())
+
+
+def ensure_auth(opener: urllib.request.OpenerDirector) -> None:
+    me = get(f"{BASE}/api/auth/me", opener)
+    if me.get("database") and not me.get("authenticated"):
+        email = f"smoke-{__import__('time').time_ns()}@fore.test"
+        post(
+            f"{BASE}/api/auth/register",
+            {"email": email, "password": "SmokeTest123!", "monthlyIncome": 60000},
+            opener,
+        )
+        me = get(f"{BASE}/api/auth/me", opener)
+        if not me.get("authenticated"):
+            raise RuntimeError("Failed to authenticate for full-stack smoke test")
 
 
 def main() -> int:
@@ -28,9 +55,14 @@ def main() -> int:
     txns = persona["transactions"]
     income = persona["monthly_income"]
 
+    opener = make_opener()
+    ensure_auth(opener)
+
     print("1. PAST — classify + burn-rate")
-    archetype = post(f"{BASE}/api/ml/classify", {"transactions": txns, "monthly_income": income})
-    burn = post(f"{BASE}/api/ml/burn-rate", {"transactions": txns})
+    archetype = post(
+        f"{BASE}/api/ml/classify", {"transactions": txns, "monthly_income": income}, opener
+    )
+    burn = post(f"{BASE}/api/ml/burn-rate", {"transactions": txns}, opener)
     assert archetype.get("label"), "missing archetype label"
     assert burn.get("projected_zero_balance_date"), "missing zero-balance date"
     print(f"   archetype={archetype['label']}, zero_balance={burn['projected_zero_balance_date']}")
@@ -59,6 +91,7 @@ def main() -> int:
                 "last_decide_verdict": None,
             },
         },
+        opener,
     )
     assert decide.get("tool_called") is True, "canIAfford tool was not called"
     verdict = decide.get("verdict")
@@ -74,8 +107,6 @@ def main() -> int:
     print(f"   Render day_shift matches: {ml['day_shift']}")
 
     print("5. CORS env wiring")
-    import os
-
     sys.path.insert(0, "ml-service")
     import main as ml_main  # noqa: E402
 

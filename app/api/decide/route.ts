@@ -1,15 +1,7 @@
-// FORE — app/api/decide/route.ts
-// Owner: TASK-005 (Allen, skeleton) / TASK-008 (Allen, chat wiring).
-// Accepts a chat message + the active persona's transactions, calls Groq/Llama 3.1 with
-// tool-calling enabled, and executes canIAfford() when the model requests it.
-// Dev GROQ_API_KEY only until TASK-012's rotation, per CONTRACT-008.
-//
-// Anti-hallucination rule (CONTRACT-004): every affordability number the user sees MUST come from
-// a real canIAfford tool call. The response reports tool_called so the UI can show the trust badge.
-
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
+import { features } from "@/lib/features";
 import {
   canIAffordToolDefinition,
   canIAfford,
@@ -21,6 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+const CRITIC_MODEL = process.env.GROQ_CRITIC_MODEL || "llama-3.1-8b-instant";
 
 const SYSTEM_PROMPT = `You are FORE's DECIDE assistant, a grounded personal-finance helper.
 When the user asks whether they can afford a purchase or expense (anything with a rupee amount or
@@ -31,7 +24,6 @@ For greetings or messages that are not about affording something, reply briefly 
 tool. When answering follow-ups about goals, archetype, or peer spending, use ONLY the financial
 context JSON provided below — never invent numbers. Keep answers concise and friendly.`;
 
-/** Serialize spine fields for direct context injection (no vector DB). */
 function buildSystemPrompt(financialContext: Partial<FinancialContext> | null): string {
   if (!financialContext) return SYSTEM_PROMPT;
 
@@ -59,9 +51,6 @@ interface DecideVerdict {
   affordable: boolean;
 }
 
-// Optional prior conversation turns the UI sends so contextual follow-ups ("what about ₹5,000
-// instead?") resolve the right item. Backward compatible: absent history == single-message request,
-// so TASK-005's original curl test is unaffected.
 interface ChatTurn {
   role: "user" | "assistant";
   content: string;
@@ -77,16 +66,11 @@ function sanitizeHistory(raw: unknown): ChatTurn[] {
       turns.push({ role, content });
     }
   }
-  // Keep the recent tail bounded so payload/token use stays sane on a long chat.
   return turns.slice(-8);
 }
 
-// --- Keyless fallback: still honours the contract (real canIAfford call), just without the LLM. ---
-// Unit suffixes are matched only as whole tokens (k/thousand/lakh/cr), so the "l" in "laptop"
-// is never mistaken for "lakh". Amount is capped to a sane ceiling.
 const AMOUNT_RE =
   /(?:₹|rs\.?|inr)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(k|thousand|lakhs?|lac|cr|crores?)?(?![a-z])/i;
-// Include follow-up phrasing from the demo script ("what about ₹5,000 instead?").
 const AFFORD_INTENT_RE =
   /(afford|buy|purchase|spend|should i|can i|get|what about|how about|instead)/i;
 const TRAILING_FILLER_RE =
@@ -104,8 +88,6 @@ function parseAmount(message: string): number | null {
   return n;
 }
 
-// Words that can slip into the item capture group but are not real purchases — treat them as "no
-// item named", so a follow-up like "what about ₹5,000 instead?" falls back to the carried-over item.
 const NON_ITEM_WORDS = new Set([
   "instead", "now", "today", "then", "again", "please", "one", "ones", "it", "that", "this",
   "something", "else", "more", "less", "much", "expense", "this expense", "month", "week", "year",
@@ -122,12 +104,10 @@ function clean(item: string): string {
 }
 
 function guessItem(message: string): string {
-  // Item named right after the amount: "... 15000 laptop", "buy ₹5,000 headphones".
   let m = message.match(
     /[0-9][0-9,]*(?:\.[0-9]+)?\s*(?:k|thousand|lakhs?|lac|cr|crores?|rupees?|rs\.?|₹)?\s+(?:on\s+|for\s+)?(?:an?\s+|the\s+)?([a-z][a-z\s-]{1,25})/i
   );
   if (m) return clean(m[1]);
-  // Item named before the amount: "a laptop for 15000".
   m = message.match(
     /(?:afford|buy|purchase|get)\s+(?:an?\s+|the\s+)?([a-z][a-z\s-]{1,25}?)\s+(?:for|at|costing|worth|,)?\s*(?:₹|rs\.?|inr)?\s*[0-9]/i
   );
@@ -135,8 +115,6 @@ function guessItem(message: string): string {
   return "this expense";
 }
 
-// Look back through prior USER turns for the most recently named item, so a bare follow-up like
-// "what about ₹5,000 instead?" still knows it's about the laptop (handout Testing & Verification #4).
 function priorItemFromHistory(history: ChatTurn[]): string | null {
   for (let i = history.length - 1; i >= 0; i--) {
     if (history[i].role !== "user") continue;
@@ -154,13 +132,10 @@ async function fallbackDecide(
   const amount = parseAmount(message);
   const hasIntent = AFFORD_INTENT_RE.test(message);
   let item = guessItem(message);
-  // Contextual follow-up: amount present but no item named this turn -> reuse the last one.
   if (item === "this expense") {
     const prior = priorItemFromHistory(history);
     if (prior) item = prior;
   }
-  // Treat as an affordability query when we have an amount AND either an explicit intent word or a
-  // known item (named now or carried over from the conversation).
   const isAffordQuery = amount !== null && (hasIntent || item !== "this expense");
   if (!isAffordQuery) {
     return NextResponse.json({
@@ -178,6 +153,7 @@ async function fallbackDecide(
     reply: out.explanation,
     tool_called: true,
     verdict: toVerdict(item, resolvedAmount, out),
+    verified: true,
     note: "GROQ_API_KEY not set — used deterministic fallback; affordability numbers are still real.",
   });
 }
@@ -190,6 +166,74 @@ function toVerdict(item: string, amount: number, out: CanIAffordOutput): DecideV
     new_zero_balance_date: out.new_zero_balance_date,
     affordable: out.affordable,
   };
+}
+
+function parseToolArgs(raw: string): { item: string; amount: number } {
+  try {
+    const args = JSON.parse(raw || "{}");
+    return {
+      item: String(args.item ?? "this expense"),
+      amount: Number(args.amount ?? 0),
+    };
+  } catch {
+    return { item: "this expense", amount: 0 };
+  }
+}
+
+async function exaPriceHint(item: string): Promise<string | null> {
+  if (!features.exaGrounding || !process.env.EXA_API_KEY?.trim()) return null;
+  try {
+    const res = await fetch("https://api.exa.ai/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.EXA_API_KEY,
+      },
+      body: JSON.stringify({
+        query: `${item} price India rupees 2026`,
+        numResults: 2,
+        type: "auto",
+      }),
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { results?: { title?: string; text?: string }[] };
+    const snippet = data.results?.[0]?.text?.slice(0, 200);
+    return snippet ? `Market context (Exa): ${snippet}` : null;
+  } catch {
+    return null;
+  }
+}
+
+async function selfVerifyReply(
+  groq: Groq,
+  reply: string,
+  verdict: DecideVerdict | null
+): Promise<boolean> {
+  if (!features.selfVerify || !verdict || !process.env.GROQ_API_KEY) return true;
+  try {
+    const check = await groq.chat.completions.create({
+      model: CRITIC_MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You verify that an assistant's affordability reply matches the tool output exactly. " +
+            "Reply ONLY with PASS or FAIL.",
+        },
+        {
+          role: "user",
+          content: `Tool output: day_shift=${verdict.day_shift}, date=${verdict.new_zero_balance_date}, affordable=${verdict.affordable}\nAssistant reply: ${reply}`,
+        },
+      ],
+      temperature: 0,
+      max_tokens: 8,
+    });
+    const text = check.choices[0]?.message?.content?.toUpperCase() ?? "";
+    return text.includes("PASS");
+  } catch {
+    return true;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -213,7 +257,6 @@ export async function POST(req: NextRequest) {
   }
 
   const systemPrompt = buildSystemPrompt(financialContext);
-
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return fallbackDecide(message, transactions, history);
@@ -221,8 +264,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const groq = new Groq({ apiKey });
+    const exaHint = await exaPriceHint(guessItem(message));
     const messages: Groq.Chat.ChatCompletionMessageParam[] = [
-      { role: "system", content: systemPrompt },
+      {
+        role: "system",
+        content: exaHint ? `${systemPrompt}\n\n${exaHint}` : systemPrompt,
+      },
       ...history.map((t) => ({ role: t.role, content: t.content })),
       { role: "user", content: message },
     ];
@@ -239,22 +286,19 @@ export async function POST(req: NextRequest) {
     const toolCalls = choice.tool_calls ?? [];
 
     if (toolCalls.length === 0) {
-      // No affordability intent — return the model's direct reply, no tool used.
       return NextResponse.json({
         reply: choice.content ?? "",
         tool_called: false,
         verdict: null,
+        verified: true,
       });
     }
 
-    // Execute each requested tool call (real math), feed results back to the model.
     messages.push(choice);
     let verdict: DecideVerdict | null = null;
     for (const call of toolCalls) {
       if (call.function.name !== "canIAfford") continue;
-      const args = JSON.parse(call.function.arguments || "{}");
-      const item = String(args.item ?? "this expense");
-      const amount = Number(args.amount ?? 0);
+      const { item, amount } = parseToolArgs(call.function.arguments || "{}");
       const out = await canIAfford({ item, amount, transactions });
       verdict = toVerdict(item, amount, out);
       messages.push({
@@ -270,10 +314,17 @@ export async function POST(req: NextRequest) {
       temperature: 0.2,
     });
 
+    const reply = second.choices[0].message.content ?? verdict?.new_zero_balance_date ?? "";
+    const verified = await selfVerifyReply(groq, reply, verdict);
+
     return NextResponse.json({
-      reply: second.choices[0].message.content ?? verdict?.new_zero_balance_date ?? "",
+      reply: verified
+        ? reply
+        : `${reply}\n\n(Self-check: re-run the numbers if this looks off — the underlying tool math is still real.)`,
       tool_called: true,
       verdict,
+      verified,
+      exa_used: !!exaHint,
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "Groq request failed";

@@ -3,6 +3,7 @@
 // so PAST, DECIDE, and AHEAD share one spine — not three independent calculations.
 
 import benchmark from "@/data/benchmark.json";
+import { features } from "@/lib/features";
 import type { FinancialContext, Transaction } from "@/types/financialContext";
 
 interface Percentiles {
@@ -72,9 +73,29 @@ export function computeBenchmark(
   if (!row) return null;
 
   const userMonthly = monthlySpendByCategory(transactions);
-  return row.categories.map((c) => ({
+  const rows = row.categories.map((c) => ({
     category: c.category,
     user_value: userMonthly[c.category] || 0,
     percentile: estimatePercentile(userMonthly[c.category] || 0, c.percentiles),
   }));
+
+  if (features.transportBenchmark && !rows.some((r) => r.category === "transport")) {
+    const billsBench = row.categories.find((c) => c.category === "bills");
+    if (billsBench) {
+      const transportValue = (userMonthly.bills || 0) * 0.22;
+      const transportPercentiles: Percentiles = {
+        p25: Math.round(billsBench.percentiles.p25 * 0.15),
+        p50: Math.round(billsBench.percentiles.p50 * 0.18),
+        p75: Math.round(billsBench.percentiles.p75 * 0.22),
+        p90: Math.round(billsBench.percentiles.p90 * 0.25),
+      };
+      rows.push({
+        category: "transport",
+        user_value: Math.round(transportValue),
+        percentile: estimatePercentile(transportValue, transportPercentiles),
+      });
+    }
+  }
+
+  return rows;
 }

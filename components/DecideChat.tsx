@@ -1,20 +1,15 @@
-// FORE — components/DecideChat.tsx
-// Owner: TASK-008 (Allen). Chat UI wired to app/api/decide/route.ts.
-// Shows a "checked your numbers" badge when the tool was actually called (trust signal), and a
-// graceful "still checking" state past 2s (CONTRACT-006), never a silent hang. Writes each verdict
-// back into the shared financial_context so AHEAD reflects it.
-// TASK-010: face-intro consistency, mobile form polish, clear chat on persona switch.
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import FaceIntro from "@/components/FaceIntro";
+import { features } from "@/lib/features";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 interface ChatMsg {
   role: "user" | "assistant";
   text: string;
   toolCalled?: boolean;
+  verified?: boolean;
   error?: boolean;
 }
 
@@ -24,12 +19,27 @@ const SUGGESTIONS = [
   "Hi",
 ];
 
-// CONTRACT-006: past 2s show a graceful "still checking" state; never a silent hang. We also cap
-// the browser request itself so a stalled route/network surfaces to the user instead of spinning
-// forever — the affordability call underneath already has its own 5s server-side timeout, this is
-// the outer ceiling for the whole round-trip (two LLM hops + the tool call).
 const SLOW_AFTER_MS = 2000;
 const REQUEST_TIMEOUT_MS = 15000;
+
+async function narrateVerdict(text: string): Promise<void> {
+  if (!features.voiceNarration) return;
+  try {
+    const res = await fetch("/api/voice/narrate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    await audio.play();
+    audio.onended = () => URL.revokeObjectURL(url);
+  } catch {
+    /* optional feature */
+  }
+}
 
 export default function DecideChat() {
   const { ctx, applyDecideVerdict } = useFinancialContext();
@@ -37,10 +47,10 @@ export default function DecideChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [slow, setSlow] = useState(false);
+  const [listening, setListening] = useState(false);
   const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionId = ctx?.session_id ?? null;
 
-  // Edge case: switching persona mid-chat must not leave the previous persona's thread on screen.
   useEffect(() => {
     setMessages([]);
     setInput("");
@@ -58,13 +68,10 @@ export default function DecideChat() {
     setSlow(false);
     slowTimer.current = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
 
-    // Send prior turns so a contextual follow-up ("what about ₹5,000 instead?") re-runs the tool
-    // against the right item instead of losing the thread. Error bubbles are excluded.
     const history = messages
       .filter((m) => !m.error)
       .map((m) => ({ role: m.role, content: m.text }));
 
-    // Abort a stalled request so the UI never hangs silently (CONTRACT-006).
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -72,6 +79,7 @@ export default function DecideChat() {
       const res = await fetch("/api/decide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           message: q,
           transactions: ctx.transactions,
@@ -96,10 +104,6 @@ export default function DecideChat() {
           { role: "assistant", text: data.error || "Something went wrong.", error: true },
         ]);
       } else {
-        // A verdict is only trustworthy if the tool actually returned a real projection. If the
-        // calculation service was unreachable the route still replies (graceful, no crash) but with
-        // an empty date — in that case we must NOT flash the "checked your numbers" trust badge and
-        // must NOT write the empty number back into the shared context (CONTRACT-001 / CONTRACT-004).
         const verdict = data.verdict;
         const verified = !!(verdict && verdict.new_zero_balance_date);
         if (verified) applyDecideVerdict(verdict);
@@ -109,9 +113,11 @@ export default function DecideChat() {
             role: "assistant",
             text: data.reply,
             toolCalled: !!data.tool_called && verified,
+            verified: data.verified !== false,
             error: !!data.tool_called && !verified,
           },
         ]);
+        if (verified && data.reply) void narrateVerdict(data.reply);
       }
     } catch (err) {
       const timedOut = err instanceof DOMException && err.name === "AbortError";
@@ -131,6 +137,43 @@ export default function DecideChat() {
       setSlow(false);
       setLoading(false);
     }
+  }
+
+  function startVoiceInput() {
+    if (!features.voiceInput || listening) return;
+    type SpeechRec = {
+      lang: string;
+      interimResults: boolean;
+      onresult: ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null;
+      onerror: (() => void) | null;
+      onend: (() => void) | null;
+      start: () => void;
+    };
+    type SpeechRecCtor = new () => SpeechRec;
+    const w = window as Window & {
+      SpeechRecognition?: SpeechRecCtor;
+      webkitSpeechRecognition?: SpeechRecCtor;
+    };
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SR) {
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", text: "Voice input isn't supported in this browser.", error: true },
+      ]);
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "en-IN";
+    rec.interimResults = false;
+    setListening(true);
+    rec.onresult = (ev) => {
+      const text = ev.results[0]?.[0]?.transcript ?? "";
+      if (text) setInput(text);
+      setListening(false);
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    rec.start();
   }
 
   return (
@@ -171,6 +214,7 @@ export default function DecideChat() {
                     }}
                   >
                     ✓ checked your numbers
+                    {features.selfVerify && m.verified === false ? " (review)" : ""}
                   </span>
                 )}
                 <p className="whitespace-pre-wrap text-sm sm:text-base">{m.text}</p>
@@ -214,6 +258,17 @@ export default function DecideChat() {
           disabled={loading}
           aria-label="Affordability question"
         />
+        {features.voiceInput && (
+          <button
+            type="button"
+            className="btn-ghost shrink-0"
+            onClick={startVoiceInput}
+            disabled={loading || listening}
+            aria-label="Voice input"
+          >
+            {listening ? "🎤…" : "🎤"}
+          </button>
+        )}
         <button
           className="btn shrink-0"
           type="submit"
