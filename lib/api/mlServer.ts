@@ -1,9 +1,6 @@
-// FORE — lib/api/mlServer.ts
-// Server-only helper for talking to the Python ML service on Render (CONTRACT-006).
-// RENDER_ML_BASE_URL is read from the environment, never hardcoded, and only ever used
-// server-side (Next.js API routes) so the URL is not shipped to the browser. The browser
-// talks to our own same-origin /api/ml/* proxy routes instead, which keeps CORS simple and
-// matches the "swap location" note in CONTRACTS.md (fetch to /api/ml/classify + /api/ml/burn-rate).
+// Server-only ML client: inline TypeScript (Vercel-only) or external Render Python service.
+
+import { isInlineMl, runInlineMl } from "@/lib/ml/runInline";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:8000";
 
@@ -15,12 +12,24 @@ export interface MlError {
   error: string;
 }
 
-// CONTRACT-006: 5s client-side timeout, { error } shape on any failure, never throw raw.
 export async function callMl<T>(
   path: string,
   body: unknown,
   timeoutMs = 5000
 ): Promise<{ ok: true; data: T } | { ok: false; status: number; error: string }> {
+  if (isInlineMl()) {
+    try {
+      const data = await runInlineMl<T>(path, body);
+      return { ok: true, data };
+    } catch (err) {
+      return {
+        ok: false,
+        status: 400,
+        error: err instanceof Error ? err.message : "Inline ML failed",
+      };
+    }
+  }
+
   const url = `${mlBaseUrl()}${path}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -49,8 +58,8 @@ export async function callMl<T>(
       ok: false,
       status: aborted ? 504 : 502,
       error: aborted
-        ? "ML service timed out (is Render awake?)"
-        : "ML service unreachable",
+        ? "ML service timed out"
+        : "ML service unreachable — set ML_MODE=inline for Vercel-only deploy (no Render needed)",
     };
   } finally {
     clearTimeout(timer);
