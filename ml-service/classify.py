@@ -45,6 +45,16 @@ _CATEGORY_MAP = {
     "subscriptions": "entertainment",
     "travel": "entertainment",
     "gaming": "entertainment",
+    # Explicit savings transactions (TASK-004's personas record these as a first-class
+    # category — money set aside, not consumed). Counted directly into the savings bucket.
+    "savings": "savings",
+    "investment": "savings",
+    "investments": "savings",
+    "sip": "savings",
+    "mutual fund": "savings",
+    "deposit": "savings",
+    "fd": "savings",
+    "rd": "savings",
 }
 
 # Credits (money in) are excluded from spend buckets — see burn_rate.py for the same convention.
