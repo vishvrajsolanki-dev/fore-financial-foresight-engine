@@ -1,0 +1,717 @@
+{
+  "session_id": "persona-arjun",
+  "persona": "Arjun \u2014 the Balanced Spender",
+  "monthly_income": 85000,
+  "income_bracket": "75k-100k",
+  "city_tier": "Tier 1",
+  "archetype_intended": "Balanced Spender",
+  "archetype": null,
+  "burn_rate": null,
+  "transactions": [
+    {
+      "date": "2026-03-31",
+      "category": "opening_balance",
+      "amount": 90000,
+      "description": "Opening balance"
+    },
+    {
+      "date": "2026-04-01",
+      "category": "income",
+      "amount": 85000,
+      "description": "Monthly salary"
+    },
+    {
+      "date": "2026-04-02",
+      "category": "food",
+      "amount": -1067,
+      "description": "Local restaurant"
+    },
+    {
+      "date": "2026-04-02",
+      "category": "food",
+      "amount": -581,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-04-02",
+      "category": "food",
+      "amount": -573,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-04-03",
+      "category": "bills",
+      "amount": -2487,
+      "description": "Water bill"
+    },
+    {
+      "date": "2026-04-04",
+      "category": "food",
+      "amount": -656,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-04-05",
+      "category": "shopping",
+      "amount": -2765,
+      "description": "Electronics store"
+    },
+    {
+      "date": "2026-04-07",
+      "category": "food",
+      "amount": -1026,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-04-08",
+      "category": "food",
+      "amount": -515,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-08",
+      "category": "food",
+      "amount": -935,
+      "description": "Bakery"
+    },
+    {
+      "date": "2026-04-08",
+      "category": "entertainment",
+      "amount": -1429,
+      "description": "Weekend trip"
+    },
+    {
+      "date": "2026-04-09",
+      "category": "bills",
+      "amount": -4064,
+      "description": "Mobile recharge"
+    },
+    {
+      "date": "2026-04-09",
+      "category": "entertainment",
+      "amount": -1355,
+      "description": "BookMyShow"
+    },
+    {
+      "date": "2026-04-10",
+      "category": "food",
+      "amount": -697,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-04-10",
+      "category": "food",
+      "amount": -1045,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-04-10",
+      "category": "bills",
+      "amount": -3883,
+      "description": "Broadband"
+    },
+    {
+      "date": "2026-04-12",
+      "category": "food",
+      "amount": -1068,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-04-12",
+      "category": "entertainment",
+      "amount": -1072,
+      "description": "Weekend trip"
+    },
+    {
+      "date": "2026-04-14",
+      "category": "food",
+      "amount": -750,
+      "description": "Groceries \u2014 DMart"
+    },
+    {
+      "date": "2026-04-14",
+      "category": "bills",
+      "amount": -3879,
+      "description": "Rent share"
+    },
+    {
+      "date": "2026-04-14",
+      "category": "entertainment",
+      "amount": -1440,
+      "description": "Spotify"
+    },
+    {
+      "date": "2026-04-16",
+      "category": "bills",
+      "amount": -3588,
+      "description": "Rent share"
+    },
+    {
+      "date": "2026-04-17",
+      "category": "food",
+      "amount": -1073,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-04-17",
+      "category": "food",
+      "amount": -1022,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-04-18",
+      "category": "entertainment",
+      "amount": -1017,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food",
+      "amount": -646,
+      "description": "Bakery"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "shopping",
+      "amount": -2067,
+      "description": "Decathlon"
+    },
+    {
+      "date": "2026-04-21",
+      "category": "entertainment",
+      "amount": -962,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-04-23",
+      "category": "shopping",
+      "amount": -1686,
+      "description": "Zara"
+    },
+    {
+      "date": "2026-04-23",
+      "category": "entertainment",
+      "amount": -1345,
+      "description": "Spotify"
+    },
+    {
+      "date": "2026-04-23",
+      "category": "savings",
+      "amount": -15249,
+      "description": "RD deposit"
+    },
+    {
+      "date": "2026-04-24",
+      "category": "shopping",
+      "amount": -1826,
+      "description": "Myntra"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "food",
+      "amount": -992,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-04-27",
+      "category": "food",
+      "amount": -509,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-04-27",
+      "category": "food",
+      "amount": -769,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-04-27",
+      "category": "shopping",
+      "amount": -2264,
+      "description": "Zara"
+    },
+    {
+      "date": "2026-05-01",
+      "category": "income",
+      "amount": 85000,
+      "description": "Monthly salary"
+    },
+    {
+      "date": "2026-05-01",
+      "category": "food",
+      "amount": -860,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "entertainment",
+      "amount": -1050,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "food",
+      "amount": -718,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "food",
+      "amount": -786,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-04",
+      "category": "food",
+      "amount": -1021,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-05-05",
+      "category": "bills",
+      "amount": -2170,
+      "description": "Mobile recharge"
+    },
+    {
+      "date": "2026-05-07",
+      "category": "food",
+      "amount": -694,
+      "description": "Local restaurant"
+    },
+    {
+      "date": "2026-05-07",
+      "category": "food",
+      "amount": -839,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-08",
+      "category": "bills",
+      "amount": -3297,
+      "description": "Broadband"
+    },
+    {
+      "date": "2026-05-08",
+      "category": "entertainment",
+      "amount": -918,
+      "description": "Netflix"
+    },
+    {
+      "date": "2026-05-10",
+      "category": "entertainment",
+      "amount": -609,
+      "description": "BookMyShow"
+    },
+    {
+      "date": "2026-05-12",
+      "category": "food",
+      "amount": -839,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-05-12",
+      "category": "shopping",
+      "amount": -2298,
+      "description": "Myntra"
+    },
+    {
+      "date": "2026-05-13",
+      "category": "savings",
+      "amount": -4710,
+      "description": "SIP transfer"
+    },
+    {
+      "date": "2026-05-14",
+      "category": "food",
+      "amount": -603,
+      "description": "Groceries \u2014 DMart"
+    },
+    {
+      "date": "2026-05-14",
+      "category": "shopping",
+      "amount": -2616,
+      "description": "Decathlon"
+    },
+    {
+      "date": "2026-05-15",
+      "category": "food",
+      "amount": -871,
+      "description": "Local restaurant"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "food",
+      "amount": -647,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "food",
+      "amount": -1015,
+      "description": "Bakery"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "entertainment",
+      "amount": -1286,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-05-17",
+      "category": "bills",
+      "amount": -2127,
+      "description": "Gas cylinder"
+    },
+    {
+      "date": "2026-05-18",
+      "category": "food",
+      "amount": -457,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-05-18",
+      "category": "shopping",
+      "amount": -2753,
+      "description": "Myntra"
+    },
+    {
+      "date": "2026-05-19",
+      "category": "bills",
+      "amount": -3249,
+      "description": "Water bill"
+    },
+    {
+      "date": "2026-05-20",
+      "category": "food",
+      "amount": -600,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-05-20",
+      "category": "entertainment",
+      "amount": -950,
+      "description": "BookMyShow"
+    },
+    {
+      "date": "2026-05-21",
+      "category": "food",
+      "amount": -770,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-05-21",
+      "category": "shopping",
+      "amount": -1439,
+      "description": "Electronics store"
+    },
+    {
+      "date": "2026-05-21",
+      "category": "entertainment",
+      "amount": -579,
+      "description": "BookMyShow"
+    },
+    {
+      "date": "2026-05-22",
+      "category": "entertainment",
+      "amount": -1307,
+      "description": "Concert ticket"
+    },
+    {
+      "date": "2026-05-23",
+      "category": "food",
+      "amount": -576,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-05-23",
+      "category": "bills",
+      "amount": -4322,
+      "description": "Broadband"
+    },
+    {
+      "date": "2026-05-24",
+      "category": "shopping",
+      "amount": -1502,
+      "description": "Electronics store"
+    },
+    {
+      "date": "2026-05-25",
+      "category": "entertainment",
+      "amount": -950,
+      "description": "Pub night"
+    },
+    {
+      "date": "2026-05-26",
+      "category": "food",
+      "amount": -776,
+      "description": "Street food"
+    },
+    {
+      "date": "2026-05-26",
+      "category": "savings",
+      "amount": -10539,
+      "description": "RD deposit"
+    },
+    {
+      "date": "2026-05-27",
+      "category": "food",
+      "amount": -1043,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-05-27",
+      "category": "food",
+      "amount": -808,
+      "description": "Groceries \u2014 DMart"
+    },
+    {
+      "date": "2026-05-27",
+      "category": "bills",
+      "amount": -2735,
+      "description": "Rent share"
+    },
+    {
+      "date": "2026-05-27",
+      "category": "entertainment",
+      "amount": -969,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-06-01",
+      "category": "income",
+      "amount": 85000,
+      "description": "Monthly salary"
+    },
+    {
+      "date": "2026-06-01",
+      "category": "food",
+      "amount": -953,
+      "description": "Bakery"
+    },
+    {
+      "date": "2026-06-02",
+      "category": "shopping",
+      "amount": -1094,
+      "description": "Electronics store"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "food",
+      "amount": -1002,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "food",
+      "amount": -815,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-05",
+      "category": "food",
+      "amount": -679,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-06-05",
+      "category": "food",
+      "amount": -876,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-06-05",
+      "category": "entertainment",
+      "amount": -1558,
+      "description": "Spotify"
+    },
+    {
+      "date": "2026-06-05",
+      "category": "entertainment",
+      "amount": -757,
+      "description": "BookMyShow"
+    },
+    {
+      "date": "2026-06-05",
+      "category": "savings",
+      "amount": -15249,
+      "description": "Gold savings"
+    },
+    {
+      "date": "2026-06-09",
+      "category": "food",
+      "amount": -481,
+      "description": "Bakery"
+    },
+    {
+      "date": "2026-06-10",
+      "category": "food",
+      "amount": -929,
+      "description": "Local restaurant"
+    },
+    {
+      "date": "2026-06-10",
+      "category": "entertainment",
+      "amount": -1037,
+      "description": "Spotify"
+    },
+    {
+      "date": "2026-06-10",
+      "category": "entertainment",
+      "amount": -1236,
+      "description": "BookMyShow"
+    },
+    {
+      "date": "2026-06-12",
+      "category": "shopping",
+      "amount": -1975,
+      "description": "Myntra"
+    },
+    {
+      "date": "2026-06-12",
+      "category": "bills",
+      "amount": -3323,
+      "description": "Gas cylinder"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "bills",
+      "amount": -2853,
+      "description": "Water bill"
+    },
+    {
+      "date": "2026-06-14",
+      "category": "shopping",
+      "amount": -1927,
+      "description": "Decathlon"
+    },
+    {
+      "date": "2026-06-16",
+      "category": "food",
+      "amount": -642,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-06-16",
+      "category": "food",
+      "amount": -692,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-06-17",
+      "category": "shopping",
+      "amount": -2225,
+      "description": "Amazon"
+    },
+    {
+      "date": "2026-06-17",
+      "category": "bills",
+      "amount": -3123,
+      "description": "Broadband"
+    },
+    {
+      "date": "2026-06-17",
+      "category": "bills",
+      "amount": -2755,
+      "description": "Electricity bill"
+    },
+    {
+      "date": "2026-06-18",
+      "category": "bills",
+      "amount": -2529,
+      "description": "Electricity bill"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "food",
+      "amount": -779,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "food",
+      "amount": -506,
+      "description": "BigBasket"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "food",
+      "amount": -617,
+      "description": "Local restaurant"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "entertainment",
+      "amount": -1554,
+      "description": "Gaming top-up"
+    },
+    {
+      "date": "2026-06-20",
+      "category": "bills",
+      "amount": -3318,
+      "description": "Mobile recharge"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food",
+      "amount": -1032,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "entertainment",
+      "amount": -958,
+      "description": "Weekend trip"
+    },
+    {
+      "date": "2026-06-22",
+      "category": "food",
+      "amount": -930,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-22",
+      "category": "food",
+      "amount": -624,
+      "description": "Bakery"
+    },
+    {
+      "date": "2026-06-22",
+      "category": "shopping",
+      "amount": -1761,
+      "description": "Myntra"
+    },
+    {
+      "date": "2026-06-23",
+      "category": "food",
+      "amount": -900,
+      "description": "Bakery"
+    },
+    {
+      "date": "2026-06-25",
+      "category": "food",
+      "amount": -512,
+      "description": "Groceries \u2014 DMart"
+    },
+    {
+      "date": "2026-06-25",
+      "category": "food",
+      "amount": -954,
+      "description": "Cafe Coffee Day"
+    },
+    {
+      "date": "2026-06-27",
+      "category": "shopping",
+      "amount": -1625,
+      "description": "Myntra"
+    },
+    {
+      "date": "2026-06-27",
+      "category": "entertainment",
+      "amount": -1517,
+      "description": "Spotify"
+    }
+  ],
+  "goal": null,
+  "last_decide_verdict": null,
+  "benchmark": null
+}

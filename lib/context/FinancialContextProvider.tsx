@@ -3,10 +3,6 @@
 // and write the SAME financial_context here, so PAST, DECIDE and AHEAD stay in sync — the "one
 // system, not three screens" property. Rule (CONTRACT-001): no face displays a number without
 // writing it back here first.
-//
-// Note on state location: CONTRACTS.md describes an in-memory server object; for a serverless
-// Vercel demo with no DB, a single client-side context is the robust equivalent — it survives
-// client navigation between the three tabs and updates every face reactively.
 
 "use client";
 
@@ -20,6 +16,7 @@ import {
 } from "react";
 
 import { getPastData } from "@/lib/api/pastClient";
+import { computeBenchmark } from "@/lib/benchmark/computeBenchmark";
 import { PERSONAS, getPersona, type PersonaSeed } from "@/lib/data/personas";
 import type { FinancialContext } from "@/types/financialContext";
 
@@ -52,7 +49,12 @@ function baseContext(seed: PersonaSeed): FinancialContext {
   };
 }
 
-function computeGoal(
+/** Amortize a one-time purchase over 30 days as extra daily burn for goal-pace math. */
+export function purchaseDailyBurn(amount: number): number {
+  return amount / 30;
+}
+
+export function computeGoal(
   targetAmount: number,
   targetDate: string,
   monthlyIncome: number,
@@ -63,18 +65,16 @@ function computeGoal(
   const daysRemaining = Math.ceil(
     (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
-  // Edge case: target date in the past -> not on pace, no nonsensical negative projection.
   if (!Number.isFinite(daysRemaining) || daysRemaining <= 0) {
     return { target_amount: targetAmount, target_date: targetDate, on_pace: false, pace_gap_days: null };
   }
-  const dailySurplus = monthlyIncome / 30 - dailyAvg; // what you can set aside each day
+  const dailySurplus = monthlyIncome / 30 - dailyAvg;
   const requiredPerDay = targetAmount / daysRemaining;
   if (dailySurplus <= 0) {
-    // Can't save at the current burn rate — unreachable, gap not projectable.
     return { target_amount: targetAmount, target_date: targetDate, on_pace: false, pace_gap_days: null };
   }
   const daysToReach = targetAmount / dailySurplus;
-  const paceGap = Math.round(daysToReach - daysRemaining); // >0 => behind, <=0 => on/ahead
+  const paceGap = Math.round(daysToReach - daysRemaining);
   return {
     target_amount: targetAmount,
     target_date: targetDate,
@@ -99,9 +99,19 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
     setPastLoading(true);
     try {
       const past = await getPastData(seed.transactions, seed.monthly_income);
+      const benchmark = computeBenchmark(
+        seed.transactions,
+        seed.income_bracket,
+        seed.city_tier
+      );
       setCtx((prev) =>
         prev && prev.session_id === sessionId
-          ? { ...prev, archetype: past.archetype, burn_rate: past.burn_rate }
+          ? {
+              ...prev,
+              archetype: past.archetype,
+              burn_rate: past.burn_rate,
+              benchmark,
+            }
           : prev
       );
     } catch (err) {
@@ -120,11 +130,8 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
   }, []);
 
   const applyDecideVerdict = useCallback((verdict: DecideVerdict) => {
-    // Writing the verdict back updates the shared spine: AHEAD re-reads the new zero-balance
-    // date so the goal pace reflects the decision immediately (no stale "three screens").
     setCtx((prev) => {
       if (!prev) return prev;
-      // Store only the CONTRACT-001 fields (drop any extras like `affordable` the API may add).
       const stored: DecideVerdict = {
         item: verdict.item,
         amount: verdict.amount,
@@ -134,7 +141,20 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       const burn_rate = prev.burn_rate
         ? { ...prev.burn_rate, projected_zero_balance_date: verdict.new_zero_balance_date }
         : prev.burn_rate;
-      return { ...prev, last_decide_verdict: stored, burn_rate };
+
+      // Recompute goal pace with the hypothetical purchase amortized as extra daily burn.
+      let goal = prev.goal;
+      if (goal && prev.burn_rate) {
+        const adjustedDailyAvg = prev.burn_rate.daily_avg + purchaseDailyBurn(verdict.amount);
+        goal = computeGoal(
+          goal.target_amount,
+          goal.target_date,
+          prev.monthly_income,
+          adjustedDailyAvg
+        );
+      }
+
+      return { ...prev, last_decide_verdict: stored, burn_rate, goal };
     });
   }, []);
 

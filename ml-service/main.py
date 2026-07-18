@@ -3,6 +3,8 @@
 # Deployed on Render as an always-on instance (CONTRACT-006) — never assume co-location with
 # the Vercel Next.js app; every call from Next.js is a genuine cross-origin HTTP request.
 
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +17,15 @@ from classify import classify
 
 app = FastAPI(title="FORE ML Service")
 
-# TODO(TASK-001): replace with the actual Vercel domain(s), never "*", per CONTRACT-006.
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    # "https://<your-vercel-domain>.vercel.app",
-]
+# CORS: allow localhost for dev + Vercel domain(s) from ALLOWED_ORIGINS env (comma-separated).
+# Set in Render dashboard, e.g. http://localhost:3000,https://fore.vercel.app
+_default_origins = ["http://localhost:3000"]
+_env_origins = os.environ.get("ALLOWED_ORIGINS", "").strip()
+ALLOWED_ORIGINS = (
+    [o.strip() for o in _env_origins.split(",") if o.strip()]
+    if _env_origins
+    else _default_origins
+)
 
 app.add_middleware(
     CORSMiddleware,

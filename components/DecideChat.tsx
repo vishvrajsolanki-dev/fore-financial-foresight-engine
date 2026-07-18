@@ -55,7 +55,20 @@ export default function DecideChat() {
       const res = await fetch("/api/decide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: q, transactions: ctx.transactions }),
+        body: JSON.stringify({
+          message: q,
+          transactions: ctx.transactions,
+          financial_context: {
+            session_id: ctx.session_id,
+            persona: ctx.persona,
+            monthly_income: ctx.monthly_income,
+            archetype: ctx.archetype,
+            burn_rate: ctx.burn_rate,
+            goal: ctx.goal,
+            benchmark: ctx.benchmark,
+            last_decide_verdict: ctx.last_decide_verdict,
+          },
+        }),
       });
       const data = await res.json();
       if (!res.ok) {

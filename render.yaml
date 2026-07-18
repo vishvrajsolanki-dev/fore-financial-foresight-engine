@@ -11,4 +11,4 @@ services:
     healthCheckPath: /health
     envVars:
       - key: ALLOWED_ORIGINS
-        sync: false # set to your Vercel domain(s) in the Render dashboard
+        sync: false # comma-separated: http://localhost:3000,https://your-app.vercel.app
