@@ -58,6 +58,12 @@ export default function DecideChat() {
     setSlow(false);
     slowTimer.current = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
 
+    // Send prior turns so a contextual follow-up ("what about ₹5,000 instead?") re-runs the tool
+    // against the right item instead of losing the thread. Error bubbles are excluded.
+    const history = messages
+      .filter((m) => !m.error)
+      .map((m) => ({ role: m.role, content: m.text }));
+
     // Abort a stalled request so the UI never hangs silently (CONTRACT-006).
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -66,7 +72,7 @@ export default function DecideChat() {
       const res = await fetch("/api/decide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: q, transactions: ctx.transactions }),
+        body: JSON.stringify({ message: q, transactions: ctx.transactions, history }),
         signal: controller.signal,
       });
       const data = await res.json();
