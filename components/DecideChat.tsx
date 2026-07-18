@@ -205,14 +205,7 @@ export default function DecideChat() {
                 }
               >
                 {m.role === "assistant" && m.toolCalled && (
-                  <span
-                    className="pill mb-2"
-                    style={{
-                      color: "var(--accent-2)",
-                      borderColor: "rgba(52,211,153,.4)",
-                      background: "rgba(52,211,153,.12)",
-                    }}
-                  >
+                  <span className="pill mb-2">
                     ✓ checked your numbers
                     {features.selfVerify && m.verified === false ? " (review)" : ""}
                   </span>
