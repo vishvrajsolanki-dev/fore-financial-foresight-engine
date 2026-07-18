@@ -9,6 +9,7 @@ build/
 *.log
 npm-debug.log*
 .DS_Store
+tsconfig.tsbuildinfo
 
 # Python (ml-service)
 ml-service/.venv/

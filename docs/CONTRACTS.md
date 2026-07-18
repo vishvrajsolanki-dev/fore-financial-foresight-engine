@@ -87,6 +87,7 @@ Rule               : the LLM MUST call this function before stating any day-shif
 Locked by: TASK-005 (stub shape), real implementation TASK-007. Consumed by: TASK-008 (chat UI narrates return value) — **zero-swap**: TASK-008 builds against this exact shape from day one; TASK-007 replaces the internal stub logic without changing the interface, so no Placeholder Replacement Note is needed for this one — the contract lock itself is what makes that safe.
 
 ## CONTRACT-005 — Benchmark JSON (static)
+Row shape (one income_bracket × city_tier combination):
 ```json
 {
   "income_bracket": "string",
@@ -94,6 +95,10 @@ Locked by: TASK-005 (stub shape), real implementation TASK-007. Consumed by: TAS
   "categories": [{ "category": "string", "percentiles": { "p25": 0, "p50": 0, "p75": 0, "p90": 0 } }]
 }
 ```
+`data/benchmark.json` is a JSON **array** of these rows covering all 5 income brackets × 3 city tiers
+(15 rows, no gaps). Categories per row: `food`, `shopping`, `bills`, `entertainment`, `savings`.
+Income brackets (locked): `Under ₹30k` | `₹30k–₹60k` | `₹60k–₹1L` | `₹1L–₹2L` | `₹2L+`.
+City tiers (locked): `Tier-1` | `Tier-2` | `Tier-3`.
 Locked by: TASK-004 (Vishvraj, paired w/ Kavya). Consumed by: TASK-006. Generated once before the build starts — never live-generated during the demo.
 
 ## CONTRACT-006 — Next.js ↔ Render HTTP contract (governs all 3 ML endpoints above)
@@ -205,3 +210,9 @@ before handing off, not just against the placeholder shape.
 7. Squash merge after review → delete branch
 
 Domain prefixes: `FE` (Drashti), `ML` (Vishvraj), `BE` (Allen). Kavya commits under the owning domain's branch when pairing — no separate `KV` prefix, ownership stays with the named task owner.
+
+## Pinned dependencies (exact versions)
+| Package | Version | Added by |
+|---|---|---|
+| `eslint` | `8.57.0` | TASK-004 (dev lint tooling so `next lint` is non-interactive) |
+| `eslint-config-next` | `14.2.5` | TASK-004 (matches locked `next@14.2.5`) |
