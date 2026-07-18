@@ -98,17 +98,21 @@ export default function FacesLayout({
       </header>
 
       <main className="flex-1">
-        {!activeId ? (
-          <div className="card py-12 text-center">
-            <p className="text-lg font-medium">Select a demo persona to begin</p>
+        {/* PAST always renders — it hosts the CSV upload, which is how a fresh
+            session gets its financial context in the first place. */}
+        {!activeId && pathname !== "/past" ? (
+          <div className="card rise-in py-12 text-center">
+            <p className="text-lg font-medium">No financial context yet</p>
             <p className="muted mt-1">
-              {fullStackEnabled
-                ? "Select a demo persona or upload your bank CSV on PAST."
-                : "Each persona has ~120 real-shaped transactions across 3 months."}
+              Upload your bank CSV on PAST, or select a demo persona above.
+              {!fullStackEnabled &&
+                " Each persona has ~120 real-shaped transactions across 3 months."}
             </p>
           </div>
         ) : (
-          children
+          <div key={pathname} className="rise-in">
+            {children}
+          </div>
         )}
       </main>
 
