@@ -38,16 +38,22 @@ export const canIAffordToolDefinition = {
 };
 
 // TASK-005: stub. Returns a plausible-shaped but fake response so tool-calling wiring can be
-// verified before TASK-007's real math exists.
+// verified before TASK-007's real math exists. Values are deliberately realistic so the model's
+// narration of the return value reads correctly (the deliverable under test), but they are NOT
+// computed from the transactions.
 export async function canIAfford(
   input: CanIAffordInput
 ): Promise<CanIAffordOutput> {
   // TODO(TASK-007 swap): replace with POST {RENDER_ML_BASE_URL}/can-i-afford (CONTRACT-004),
-  // passing input.item, input.amount, and the current financial_context's transactions.
+  // passing input.item, input.amount, and the current financial_context's transactions —
+  // via a client module (lib/api/mlClient.ts) mirroring the pastClient.ts pattern.
   return {
     affordable: true,
-    day_shift: 0,
-    new_zero_balance_date: "1970-01-01",
-    explanation: "STUB — TASK-007 has not replaced this yet.",
+    day_shift: -6,
+    new_zero_balance_date: "2026-09-08",
+    explanation:
+      `Buying ${input.item} for ₹${input.amount} moves your projected zero-balance date ` +
+      `forward by 6 days, to 2026-09-08. You can afford it, but it tightens your runway. ` +
+      `[STUB — real regression lands in TASK-007 behind this same interface.]`,
   };
 }
