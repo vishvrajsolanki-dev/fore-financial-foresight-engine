@@ -1,0 +1,915 @@
+{
+  "persona": "meera",
+  "display_name": "Meera — the foodie designer",
+  "monthly_income": 55000,
+  "income_bracket": "30k-60k",
+  "city_tier": "tier-2",
+  "transactions": [
+    {
+      "date": "2026-04-17",
+      "category": "groceries",
+      "amount": 595,
+      "description": "Local kirana"
+    },
+    {
+      "date": "2026-04-17",
+      "category": "transport",
+      "amount": 90,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-04-18",
+      "category": "food_dining",
+      "amount": 200,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-18",
+      "category": "transport",
+      "amount": 160,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-04-18",
+      "category": "entertainment",
+      "amount": 335,
+      "description": "Food festival entry"
+    },
+    {
+      "date": "2026-04-19",
+      "category": "food_dining",
+      "amount": 530,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-20",
+      "category": "food_dining",
+      "amount": 545,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-04-20",
+      "category": "food_dining",
+      "amount": 390,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-04-21",
+      "category": "food_dining",
+      "amount": 520,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-04-21",
+      "category": "transport",
+      "amount": 95,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-04-22",
+      "category": "food_dining",
+      "amount": 665,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-23",
+      "category": "food_dining",
+      "amount": 335,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-04-23",
+      "category": "food_dining",
+      "amount": 385,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-04-23",
+      "category": "transport",
+      "amount": 75,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "food_dining",
+      "amount": 635,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-25",
+      "category": "transport",
+      "amount": 75,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-04-26",
+      "category": "food_dining",
+      "amount": 520,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-04-27",
+      "category": "food_dining",
+      "amount": 340,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-04-27",
+      "category": "food_dining",
+      "amount": 255,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-04-28",
+      "category": "food_dining",
+      "amount": 445,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-04-28",
+      "category": "transport",
+      "amount": 120,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-04-30",
+      "category": "food_dining",
+      "amount": 410,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-04-30",
+      "category": "food_dining",
+      "amount": 545,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-05-01",
+      "category": "food_dining",
+      "amount": 315,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-05-01",
+      "category": "transport",
+      "amount": 115,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "rent",
+      "amount": 12720,
+      "description": "Monthly rent"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "food_dining",
+      "amount": 230,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "food_dining",
+      "amount": 675,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-05-02",
+      "category": "transport",
+      "amount": 140,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "food_dining",
+      "amount": 415,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "transport",
+      "amount": 155,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-05-03",
+      "category": "entertainment",
+      "amount": 430,
+      "description": "Food festival entry"
+    },
+    {
+      "date": "2026-05-04",
+      "category": "food_dining",
+      "amount": 245,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-05",
+      "category": "transport",
+      "amount": 155,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-05-06",
+      "category": "utilities",
+      "amount": 1830,
+      "description": "Electricity + internet"
+    },
+    {
+      "date": "2026-05-06",
+      "category": "food_dining",
+      "amount": 235,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-08",
+      "category": "food_dining",
+      "amount": 405,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-05-09",
+      "category": "food_dining",
+      "amount": 690,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-09",
+      "category": "transport",
+      "amount": 135,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-05-10",
+      "category": "food_dining",
+      "amount": 715,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-10",
+      "category": "transport",
+      "amount": 125,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-05-11",
+      "category": "food_dining",
+      "amount": 590,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-05-11",
+      "category": "food_dining",
+      "amount": 500,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-11",
+      "category": "transport",
+      "amount": 115,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-05-12",
+      "category": "food_dining",
+      "amount": 320,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-12",
+      "category": "groceries",
+      "amount": 305,
+      "description": "Veggie market"
+    },
+    {
+      "date": "2026-05-13",
+      "category": "food_dining",
+      "amount": 270,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-13",
+      "category": "groceries",
+      "amount": 425,
+      "description": "Veggie market"
+    },
+    {
+      "date": "2026-05-14",
+      "category": "food_dining",
+      "amount": 255,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-05-14",
+      "category": "transport",
+      "amount": 80,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-05-15",
+      "category": "food_dining",
+      "amount": 675,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "food_dining",
+      "amount": 470,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-16",
+      "category": "food_dining",
+      "amount": 635,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-17",
+      "category": "food_dining",
+      "amount": 685,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-05-18",
+      "category": "food_dining",
+      "amount": 640,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-05-18",
+      "category": "transport",
+      "amount": 70,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-05-19",
+      "category": "food_dining",
+      "amount": 665,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-20",
+      "category": "food_dining",
+      "amount": 215,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-22",
+      "category": "food_dining",
+      "amount": 410,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-22",
+      "category": "food_dining",
+      "amount": 540,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-23",
+      "category": "food_dining",
+      "amount": 400,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-24",
+      "category": "food_dining",
+      "amount": 615,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-24",
+      "category": "food_dining",
+      "amount": 290,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-05-24",
+      "category": "transport",
+      "amount": 75,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-05-25",
+      "category": "food_dining",
+      "amount": 410,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-26",
+      "category": "food_dining",
+      "amount": 245,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-26",
+      "category": "shopping",
+      "amount": 1060,
+      "description": "Cookbook"
+    },
+    {
+      "date": "2026-05-27",
+      "category": "food_dining",
+      "amount": 510,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-28",
+      "category": "food_dining",
+      "amount": 640,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-28",
+      "category": "transport",
+      "amount": 90,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-05-29",
+      "category": "food_dining",
+      "amount": 300,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-05-29",
+      "category": "food_dining",
+      "amount": 695,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-29",
+      "category": "entertainment",
+      "amount": 300,
+      "description": "Movie ticket"
+    },
+    {
+      "date": "2026-05-30",
+      "category": "food_dining",
+      "amount": 550,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-05-30",
+      "category": "food_dining",
+      "amount": 485,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "food_dining",
+      "amount": 330,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "food_dining",
+      "amount": 645,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-05-31",
+      "category": "transport",
+      "amount": 175,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-06-01",
+      "category": "food_dining",
+      "amount": 365,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-06-02",
+      "category": "rent",
+      "amount": 13280,
+      "description": "Monthly rent"
+    },
+    {
+      "date": "2026-06-02",
+      "category": "food_dining",
+      "amount": 280,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-02",
+      "category": "transport",
+      "amount": 105,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-06-03",
+      "category": "food_dining",
+      "amount": 250,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "food_dining",
+      "amount": 470,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "food_dining",
+      "amount": 210,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-04",
+      "category": "transport",
+      "amount": 80,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-06-06",
+      "category": "utilities",
+      "amount": 1750,
+      "description": "Electricity + internet"
+    },
+    {
+      "date": "2026-06-06",
+      "category": "food_dining",
+      "amount": 380,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-06",
+      "category": "food_dining",
+      "amount": 325,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-07",
+      "category": "food_dining",
+      "amount": 390,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-06-08",
+      "category": "food_dining",
+      "amount": 680,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-08",
+      "category": "transport",
+      "amount": 105,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-06-09",
+      "category": "food_dining",
+      "amount": 440,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-06-11",
+      "category": "food_dining",
+      "amount": 190,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-06-11",
+      "category": "food_dining",
+      "amount": 275,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-12",
+      "category": "food_dining",
+      "amount": 465,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "food_dining",
+      "amount": 275,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-06-13",
+      "category": "food_dining",
+      "amount": 320,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-06-15",
+      "category": "food_dining",
+      "amount": 650,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-15",
+      "category": "transport",
+      "amount": 105,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-06-16",
+      "category": "food_dining",
+      "amount": 500,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-06-16",
+      "category": "food_dining",
+      "amount": 650,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-17",
+      "category": "food_dining",
+      "amount": 450,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-17",
+      "category": "food_dining",
+      "amount": 210,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-17",
+      "category": "transport",
+      "amount": 100,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-06-18",
+      "category": "food_dining",
+      "amount": 285,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "food_dining",
+      "amount": 595,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "food_dining",
+      "amount": 405,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-06-19",
+      "category": "transport",
+      "amount": 165,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-06-20",
+      "category": "food_dining",
+      "amount": 335,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food_dining",
+      "amount": 455,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "food_dining",
+      "amount": 420,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-21",
+      "category": "groceries",
+      "amount": 485,
+      "description": "Veggie market"
+    },
+    {
+      "date": "2026-06-22",
+      "category": "food_dining",
+      "amount": 340,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-06-23",
+      "category": "food_dining",
+      "amount": 505,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-24",
+      "category": "transport",
+      "amount": 65,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-06-25",
+      "category": "food_dining",
+      "amount": 575,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-26",
+      "category": "food_dining",
+      "amount": 370,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-06-27",
+      "category": "food_dining",
+      "amount": 605,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-06-27",
+      "category": "transport",
+      "amount": 70,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-06-28",
+      "category": "transport",
+      "amount": 175,
+      "description": "Bus pass"
+    },
+    {
+      "date": "2026-06-30",
+      "category": "food_dining",
+      "amount": 525,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-06-30",
+      "category": "groceries",
+      "amount": 380,
+      "description": "Local kirana"
+    },
+    {
+      "date": "2026-07-01",
+      "category": "food_dining",
+      "amount": 545,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-07-01",
+      "category": "food_dining",
+      "amount": 435,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-07-01",
+      "category": "transport",
+      "amount": 170,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-07-02",
+      "category": "rent",
+      "amount": 13180,
+      "description": "Monthly rent"
+    },
+    {
+      "date": "2026-07-02",
+      "category": "transport",
+      "amount": 155,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-07-03",
+      "category": "food_dining",
+      "amount": 510,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-07-03",
+      "category": "food_dining",
+      "amount": 585,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-07-04",
+      "category": "transport",
+      "amount": 80,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-07-05",
+      "category": "food_dining",
+      "amount": 330,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-07-05",
+      "category": "food_dining",
+      "amount": 300,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-07-05",
+      "category": "shopping",
+      "amount": 1095,
+      "description": "Kitchen gadget"
+    },
+    {
+      "date": "2026-07-06",
+      "category": "utilities",
+      "amount": 1820,
+      "description": "Electricity + internet"
+    },
+    {
+      "date": "2026-07-06",
+      "category": "food_dining",
+      "amount": 330,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-07-06",
+      "category": "food_dining",
+      "amount": 205,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-07-07",
+      "category": "food_dining",
+      "amount": 210,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-07-07",
+      "category": "food_dining",
+      "amount": 630,
+      "description": "New restaurant try"
+    },
+    {
+      "date": "2026-07-07",
+      "category": "shopping",
+      "amount": 580,
+      "description": "Cookbook"
+    },
+    {
+      "date": "2026-07-08",
+      "category": "food_dining",
+      "amount": 460,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-07-09",
+      "category": "food_dining",
+      "amount": 215,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-07-09",
+      "category": "transport",
+      "amount": 115,
+      "description": "Rapido"
+    },
+    {
+      "date": "2026-07-11",
+      "category": "food_dining",
+      "amount": 330,
+      "description": "Cafe brunch"
+    },
+    {
+      "date": "2026-07-12",
+      "category": "food_dining",
+      "amount": 420,
+      "description": "Zomato dinner"
+    },
+    {
+      "date": "2026-07-12",
+      "category": "transport",
+      "amount": 115,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-07-13",
+      "category": "transport",
+      "amount": 130,
+      "description": "Auto fare"
+    },
+    {
+      "date": "2026-07-14",
+      "category": "food_dining",
+      "amount": 590,
+      "description": "Swiggy order"
+    },
+    {
+      "date": "2026-07-14",
+      "category": "food_dining",
+      "amount": 560,
+      "description": "Street food crawl"
+    },
+    {
+      "date": "2026-07-14",
+      "category": "entertainment",
+      "amount": 260,
+      "description": "Movie ticket"
+    },
+    {
+      "date": "2026-07-15",
+      "category": "food_dining",
+      "amount": 580,
+      "description": "New restaurant try"
+    }
+  ]
+}
