@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // TASK-010: reliable `/` → `/past` redirect (App Router `redirect()` alone can omit Location
-  // on the statically optimized production response).
+  // FE flow: `/` → `/login` so the demo always opens on sign-in (sign in → CSV
+  // upload → dashboard). Kept in config, not App Router `redirect()`, because the
+  // latter can omit Location on statically optimized production responses (TASK-010).
   async redirects() {
-    return [{ source: "/", destination: "/past", permanent: false }];
+    return [{ source: "/", destination: "/login", permanent: false }];
   },
 };
 

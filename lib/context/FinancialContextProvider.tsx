@@ -15,6 +15,7 @@ import {
 
 import { getPastData } from "@/lib/api/pastClient";
 import { computeBenchmark } from "@/lib/benchmark/computeBenchmark";
+import { inferCityTier, inferIncomeBracket, parseBankCsv } from "@/lib/csv/parseBankCsv";
 import { PERSONAS, getPersona, type PersonaSeed } from "@/lib/data/personas";
 import type { FinancialContext } from "@/types/financialContext";
 
@@ -192,6 +193,53 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
 
   const uploadCsv = useCallback(
     async (file: File, monthlyIncome: number, cityTier: string): Promise<CsvUploadMeta> => {
+      // Demo mode (no DB/auth): parse the CSV in the browser and run the same
+      // client-side ML calls the personas use — nothing is persisted anywhere.
+      if (!fullStackEnabled || !authUser) {
+        setPastLoading(true);
+        setPastError(null);
+        try {
+          const text = await file.text();
+          const parsed = parseBankCsv(text);
+          const sessionId = `csv-upload-${Date.now()}`;
+          const base: FinancialContext = {
+            session_id: sessionId,
+            persona: "Your CSV upload",
+            monthly_income: monthlyIncome,
+            archetype: null,
+            burn_rate: null,
+            transactions: parsed.transactions,
+            goal: null,
+            last_decide_verdict: null,
+            benchmark: null,
+          };
+          setActiveId(sessionId);
+          setCtx(base);
+          const past = await getPastData(parsed.transactions, monthlyIncome);
+          const benchmark = computeBenchmark(
+            parsed.transactions,
+            inferIncomeBracket(monthlyIncome),
+            inferCityTier(cityTier)
+          );
+          setCtx((prev) =>
+            prev && prev.session_id === sessionId
+              ? { ...prev, archetype: past.archetype, burn_rate: past.burn_rate, benchmark }
+              : prev
+          );
+          return {
+            rowCount: parsed.rowCount,
+            skippedRows: parsed.skippedRows,
+            detectedFormat: parsed.detectedFormat,
+            warnings: parsed.warnings,
+          };
+        } catch (err) {
+          setPastError(err instanceof Error ? err.message : "CSV analysis failed");
+          throw err;
+        } finally {
+          setPastLoading(false);
+        }
+      }
+
       const form = new FormData();
       form.append("file", file);
       form.append("monthlyIncome", String(monthlyIncome));
@@ -213,7 +261,7 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
         setPastLoading(false);
       }
     },
-    []
+    [authUser, fullStackEnabled]
   );
 
   const setGoal = useCallback(

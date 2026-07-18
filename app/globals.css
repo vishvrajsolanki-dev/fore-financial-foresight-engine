@@ -2,17 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* FORE — "Warm Ledger" theme (FE polish).
+   Same token names as the original dark theme so every component keeps working;
+   only the values changed (dark navy -> warm light ivory + terracotta accent). */
 :root {
-  --bg: #0b1020;
-  --bg-soft: #131a2e;
-  --card: #171f38;
-  --border: #26304f;
-  --text: #e8ecf7;
-  --muted: #9aa6c4;
-  --accent: #5b8cff;
-  --accent-2: #34d399;
-  --danger: #f87171;
-  --warn: #fbbf24;
+  --bg: #faf7f2;
+  --bg-soft: #f1ebe1;
+  --card: #fefdfb;
+  --border: #e7ddcf;
+  --text: #241c16;
+  --muted: #6b6157;
+  --accent: #de5b32;
+  --accent-2: #2e7d5b;
+  --danger: #c93a2b;
+  --warn: #b45309;
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -23,12 +27,25 @@ html,
 body {
   padding: 0;
   margin: 0;
-  background: radial-gradient(1200px 600px at 20% -10%, #1a2b52 0%, transparent 60%),
+  background: radial-gradient(1100px 500px at 85% -10%, rgba(244, 205, 175, 0.55) 0%, transparent 60%),
+    radial-gradient(900px 450px at -10% 100%, rgba(243, 226, 195, 0.45) 0%, transparent 55%),
     var(--bg);
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle film grain so large ivory surfaces don't read flat. Pointer-events off,
+   3.5% opacity — decorative only. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 a {
@@ -42,6 +59,8 @@ button:disabled,
   opacity: 0.45;
   cursor: not-allowed;
   filter: none;
+  transform: none;
+  box-shadow: none;
 }
 
 @layer components {
@@ -51,36 +70,50 @@ button:disabled,
     border-color: var(--border);
   }
   .btn {
-    @apply rounded-xl px-4 py-2 font-medium transition-colors;
+    @apply rounded-xl px-4 py-2 font-medium;
     background: var(--accent);
     color: #fff;
+    transition: all 0.2s ease-out;
+    box-shadow: 0 1px 2px rgba(150, 60, 30, 0.25), 0 4px 12px rgba(222, 91, 50, 0.22);
   }
   .btn:hover:not(:disabled) {
-    filter: brightness(1.08);
+    filter: brightness(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(150, 60, 30, 0.25), 0 8px 20px rgba(222, 91, 50, 0.32);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 3px rgba(150, 60, 30, 0.25);
   }
   .btn-ghost {
-    @apply rounded-xl px-3 py-2 font-medium transition-colors;
+    @apply rounded-xl px-3 py-2 font-medium;
     border: 1px solid var(--border);
     color: var(--text);
     background: transparent;
+    transition: all 0.2s ease-out;
   }
   .btn-ghost:hover:not(:disabled) {
     background: var(--bg-soft);
   }
+  .btn-ghost:active:not(:disabled) {
+    transform: scale(0.98);
+  }
   .input {
     @apply rounded-xl px-3 py-2 w-full outline-none;
-    background: var(--bg-soft);
+    background: var(--card);
     border: 1px solid var(--border);
     color: var(--text);
+    transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   }
   .input:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(222, 91, 50, 0.15);
   }
   .pill {
     @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium;
-    background: rgba(91, 140, 255, 0.15);
-    color: #b9ccff;
-    border: 1px solid rgba(91, 140, 255, 0.35);
+    background: rgba(222, 91, 50, 0.1);
+    color: #a8431f;
+    border: 1px solid rgba(222, 91, 50, 0.28);
   }
   .muted {
     color: var(--muted);
@@ -88,12 +121,102 @@ button:disabled,
   /* Shared face label — keeps PAST / DECIDE / AHEAD intros visually identical. */
   .face-kicker {
     @apply text-sm font-semibold uppercase tracking-[0.14em];
-    color: var(--accent-2);
+    color: var(--accent);
   }
   .disclaimer {
     @apply rounded-xl px-3 py-2 text-xs leading-relaxed;
     color: var(--muted);
-    background: rgba(251, 191, 36, 0.08);
-    border: 1px solid rgba(251, 191, 36, 0.28);
+    background: rgba(180, 83, 9, 0.07);
+    border: 1px solid rgba(180, 83, 9, 0.25);
   }
+
+  /* --- Auth page (login/register) --- */
+  .btn-provider {
+    @apply rounded-xl px-4 py-2.5 font-medium w-full flex items-center justify-center gap-2.5 text-sm;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: all 0.2s ease-out;
+  }
+  .btn-provider:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #d9cbb6;
+    background: #fbf9f5;
+    box-shadow: 0 4px 12px rgba(80, 60, 40, 0.08);
+  }
+  .btn-provider:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+  .auth-divider {
+    @apply flex items-center gap-3 text-xs;
+    color: var(--muted);
+  }
+  .auth-divider::before,
+  .auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .feature-panel {
+    @apply rounded-2xl border p-8 relative overflow-hidden;
+    border-color: var(--border);
+    background: linear-gradient(150deg, #faf0e4, #f6e3d3);
+  }
+  .feature-icon {
+    @apply flex items-center justify-center rounded-xl shrink-0;
+    width: 38px;
+    height: 38px;
+    background: rgba(222, 91, 50, 0.12);
+    color: var(--accent);
+  }
+}
+
+/* --- Motion system (Warm Ledger) ---
+   150ms hover / 250ms card / 400ms page-level, expo-out easing. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise-in {
+  animation: rise-in 0.4s var(--ease-expo) both;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+  vertical-align: -2px;
+}
+
+/* Shine sweep for the single demo-critical CTA. */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 250, 240, 0.35) 50%, transparent 60%);
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+}
+.btn-shine:hover::after {
+  transform: translateX(120%);
 }
