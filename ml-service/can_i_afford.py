@@ -1,11 +1,6 @@
 # FORE — ml-service/can_i_afford.py
 # Owner: TASK-007 (Vishvraj). CONTRACT-004 in docs/CONTRACTS.md.
 #
-# NOTE: standardized to ml-service/can_i_afford.py to stay consistent with classify.py and
-# burn_rate.py's location (TASK-007_handout.md's "BRANCH / FILE OWNERSHIP" section originally
-# said api/ml/can-i-afford.py — that path belonged to the earlier co-located-function plan before
-# the Render migration; this file is the corrected, current location).
-#
 # Do NOT write a second regression path — insert the hypothetical expense into the transaction
 # set fed to burn_rate.py's compute_burn_rate(), reuse it directly.
 #
@@ -13,19 +8,55 @@
 # Input:  { item: string, amount: number, transactions: Transaction[] }
 # Output: { affordable: boolean, day_shift: number, new_zero_balance_date: string, explanation: string }
 
-from burn_rate import compute_burn_rate
+from datetime import date
+
+from burn_rate import _parse, _ordered, compute_burn_rate
 
 
 def can_i_afford(item: str, amount: float, transactions: list) -> dict:
-    """
-    TODO(TASK-007):
-      1. Compute the baseline projected_zero_balance_date via compute_burn_rate(transactions).
-      2. Insert a hypothetical transaction for `item`/`amount`, re-run compute_burn_rate().
-      3. day_shift = difference in days between baseline and hypothetical zero-balance dates.
-      4. affordable: false if the hypothetical zero-balance date moves into the past — return a
-         sane explanation, not a crash or a negative date.
-      5. This is THE contract-violation risk in the whole product (CONTRACT-004) — test this more,
-         not less, relative to its time box. Hand-calculate expected day_shift for a known persona
-         and compare before merging.
-    """
-    raise NotImplementedError("TASK-007: implement can_i_afford()")
+    if not transactions:
+        raise ValueError("can_i_afford: no transactions provided")
+    amount = abs(float(amount))
+
+    # 1. Baseline projection from the real, unaltered history.
+    baseline = compute_burn_rate(transactions)
+    baseline_zero = _parse(baseline["projected_zero_balance_date"])
+    as_of = _parse(baseline["_as_of"])
+
+    # 2. Insert the hypothetical expense as a money-out row dated "now" (the as-of date), then
+    #    re-run the SAME regressor. No parallel math path.
+    hypothetical_txn = {
+        "date": as_of.isoformat(),
+        "category": "shopping",
+        "amount": -amount,
+        "description": f"[hypothetical] {item}",
+    }
+    hypo = compute_burn_rate(_ordered(list(transactions) + [hypothetical_txn]), as_of=as_of)
+    hypo_zero = _parse(hypo["projected_zero_balance_date"])
+
+    # 3. Day-shift = how many days the zero-balance date moves (negative = sooner).
+    day_shift = (hypo_zero - baseline_zero).days
+
+    # 4. Affordable if the purchase still leaves a positive balance with runway into the future.
+    remaining_balance = hypo["_current_balance"]
+    affordable = remaining_balance > 0 and hypo_zero > as_of
+
+    if affordable:
+        explanation = (
+            f"Yes — you can afford {item} (₹{amount:,.0f}). It moves your projected "
+            f"zero-balance date {abs(day_shift)} day(s) earlier, from {baseline_zero.isoformat()} "
+            f"to {hypo_zero.isoformat()}, leaving about ₹{remaining_balance:,.0f} in balance."
+        )
+    else:
+        explanation = (
+            f"Not right now — {item} (₹{amount:,.0f}) would push your balance to about "
+            f"₹{remaining_balance:,.0f} and bring your zero-balance date to {hypo_zero.isoformat()} "
+            f"({abs(day_shift)} day(s) sooner). Consider waiting or trimming other spending first."
+        )
+
+    return {
+        "affordable": bool(affordable),
+        "day_shift": int(day_shift),
+        "new_zero_balance_date": hypo_zero.isoformat(),
+        "explanation": explanation,
+    }
