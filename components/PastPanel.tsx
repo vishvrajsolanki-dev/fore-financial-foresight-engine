@@ -47,22 +47,39 @@ export default function PastPanel() {
     if (!ctx?.transactions?.length) return [];
     const sorted = [...ctx.transactions].sort((a, b) => a.date.localeCompare(b.date));
     let running = 0;
-    // Bucket to one point per calendar week so 12-month statements stay readable.
-    const weekMap = new Map<string, number>();
+    const weekMap = new Map<string, { balance: number; iso: string }>();
     for (const t of sorted) {
       running += t.amount;
       const d = new Date(t.date + "T00:00:00Z");
       const day = d.getUTCDay();
       const weekStart = new Date(d);
       weekStart.setUTCDate(d.getUTCDate() - day);
-      const key = weekStart.toISOString().slice(0, 10);
-      weekMap.set(key, Math.round(running));
+      const iso = weekStart.toISOString().slice(0, 10);
+      const key = iso.slice(5);
+      weekMap.set(key, { balance: Math.round(running), iso });
     }
-    return Array.from(weekMap.entries()).map(([date, balance]) => ({
-      date: date.slice(5),
+    return Array.from(weekMap.entries()).map(([date, { balance, iso }]) => ({
+      date,
       balance,
+      iso,
     }));
   }, [ctx?.transactions]);
+
+  const projectedZeroMarker = useMemo(() => {
+    if (!ctx?.burn_rate?.projected_zero_balance_date || !balanceSeries.length) return null;
+    const target = ctx.burn_rate.projected_zero_balance_date;
+    const targetTime = new Date(target + "T00:00:00Z").getTime();
+    let nearest = balanceSeries[0];
+    let minDist = Infinity;
+    for (const pt of balanceSeries) {
+      const dist = Math.abs(new Date(pt.iso + "T00:00:00Z").getTime() - targetTime);
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = pt;
+      }
+    }
+    return { x: nearest.date, label: target };
+  }, [ctx?.burn_rate?.projected_zero_balance_date, balanceSeries]);
 
   const balanceWindowLabel = useMemo(() => {
     if (!ctx?.transactions?.length) return "Running balance";
@@ -204,6 +221,19 @@ export default function PastPanel() {
                 tickFormatter={(v) => `${Math.round(v / 1000)}k`}
               />
               <ReferenceLine y={0} stroke="var(--danger)" strokeDasharray="4 4" />
+              {projectedZeroMarker && (
+                <ReferenceLine
+                  x={projectedZeroMarker.x}
+                  stroke="var(--accent-2)"
+                  strokeDasharray="6 3"
+                  label={{
+                    value: `Projected $0 · ${projectedZeroMarker.label}`,
+                    position: "insideTopRight",
+                    fill: "var(--muted)",
+                    fontSize: 10,
+                  }}
+                />
+              )}
               <Tooltip
                 formatter={(v: number) => inr(v, currency)}
                 contentStyle={{

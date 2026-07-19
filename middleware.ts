@@ -37,10 +37,18 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Gate persistence APIs when DB is on. Face pages stay public for demo browsing;
-  // /api/decide and /api/ml stay callable for demo personas (rate-limited in handlers).
+  // Gate persistence + costly AI APIs when DB is on. Face pages stay public for demo browsing.
+  // Handlers still enforce requireAuth + per-user rate limits as defense in depth.
   const isProtected =
-    pathname.startsWith("/api/context") || pathname.startsWith("/api/upload");
+    pathname.startsWith("/api/context") ||
+    pathname.startsWith("/api/upload") ||
+    pathname.startsWith("/api/ml") ||
+    pathname.startsWith("/api/voice") ||
+    pathname.startsWith("/api/chat") ||
+    pathname.startsWith("/api/decide") ||
+    pathname.startsWith("/api/transactions") ||
+    pathname.startsWith("/api/account") ||
+    pathname.startsWith("/api/alerts");
 
   if (!isProtected) {
     return NextResponse.next();

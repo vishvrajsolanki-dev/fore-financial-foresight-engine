@@ -6,6 +6,10 @@ import { computeBenchmark } from "../lib/benchmark/computeBenchmark";
 import { computeGoal, purchaseDailyBurn } from "../lib/ahead/goalMath";
 import { formatDecideReply } from "../lib/decide/formatReply";
 import { buildGoalInsight, buildBenchmarkInsights } from "../lib/ahead/insights";
+import { detectRecurring } from "../lib/ml/recurring";
+import { classifyTransaction } from "../lib/ml/txnClassifier";
+import { transactionFingerprint, dedupeTransactions } from "../lib/ml/fingerprint";
+import { explainArchetype } from "../lib/ml/learnedArchetypes";
 import priya from "../data/personas/persona-priya.json";
 
 async function main() {
@@ -88,6 +92,22 @@ async function main() {
     benchmark: [{ category: "dining", user_value: 5000, percentile: 80 }],
   });
   if (!benchInsights[0]?.insight.includes("dining")) throw new Error("buildBenchmarkInsights");
+
+  const recurring = detectRecurring(priya.transactions);
+  if (!Array.isArray(recurring)) throw new Error("detectRecurring");
+
+  const classified = classifyTransaction(priya.transactions[5], []);
+  if (!classified.category || classified.confidence <= 0) throw new Error("txnClassifier");
+
+  const fp = transactionFingerprint(priya.transactions[0]);
+  if (fp.length < 16) throw new Error("fingerprint");
+  const deduped = dedupeTransactions([priya.transactions[0], priya.transactions[0]], new Set());
+  if (deduped.unique.length !== 1 || deduped.skipped !== 1) throw new Error("dedupe");
+
+  const explained = explainArchetype(priya.transactions, priya.monthly_income);
+  if (!explained.topDrivers.length || explained.label !== "Disciplined Saver") {
+    throw new Error(`explainArchetype ${explained.label}`);
+  }
 
   console.log("  All unit checks OK");
 }

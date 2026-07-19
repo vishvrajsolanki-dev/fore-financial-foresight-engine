@@ -106,8 +106,8 @@ Row shape (one income_bracket × city_tier combination):
 ```
 `data/benchmark.json` is a JSON **array** of these rows covering all 5 income brackets × 3 city tiers
 (15 rows, no gaps). Categories per row: `food`, `shopping`, `bills`, `entertainment`, `savings`.
-Income brackets (locked): `Under ₹30k` | `₹30k–₹60k` | `₹60k–₹1L` | `₹1L–₹2L` | `₹2L+`.
-City tiers (locked): `Tier-1` | `Tier-2` | `Tier-3`.
+Income brackets (locked): `0-25k` | `25k-50k` | `50k-75k` | `75k-100k` | `100k+`.
+City tiers (locked): `Tier 1` | `Tier 2` | `Tier 3`.
 Locked by: TASK-004 (Vishvraj, paired w/ Kavya). Consumed by: TASK-006. Generated once before the build starts — never live-generated during the demo.
 
 ## CONTRACT-006 — Next.js ↔ Render HTTP contract (governs all 3 ML endpoints above)

@@ -6,16 +6,12 @@
 #
 # POST /burn-rate
 # Input:  { transactions: Transaction[] }
-# Output: { daily_avg: number, trend_slope: number, projected_zero_balance_date: string }
+# Output: { daily_avg, trend_slope, projected_zero_balance_date, weekly_seasonal, ... }
 
 from datetime import date, timedelta
+import math
 
-# Credits (money in) counted toward the running balance, never toward spend.
 _CREDIT_CATEGORIES = {"income", "salary", "credit", "refund", "cashback", "opening_balance"}
-
-# If the trend line never crosses zero (balance flat or growing), the projection is capped at
-# 10 years out rather than claiming a real date — a straight-line trend has nothing honest to
-# say beyond "not on the horizon".
 _PROJECTION_CAP_DAYS = 3650
 
 
@@ -24,10 +20,8 @@ def _parse_date(value: str) -> date:
 
 
 def _signed_amount(txn: dict) -> float:
-    """Credits positive (money in), debits negative (money out)."""
     amount = float(txn.get("amount", 0))
     category = str(txn.get("category", "")).strip().lower()
-    # P2P transfers carry a real signed amount (in or out) — trust the sign.
     if category == "transfers":
         return amount
     if category in _CREDIT_CATEGORIES:
@@ -35,15 +29,23 @@ def _signed_amount(txn: dict) -> float:
     return -abs(amount)
 
 
-def compute_burn_rate(transactions: list) -> dict:
-    """CONTRACT-003: straight-line trend on the running balance.
+def _weekly_seasonal_factors(dated: list[tuple[date, float]]) -> list[float]:
+    dow_spend = [0.0] * 7
+    dow_count = [0] * 7
+    for txn_date, amt in dated:
+        if amt >= 0:
+            continue
+        dow = txn_date.weekday()
+        # Python weekday: Mon=0 … convert to Sun=0
+        dow_sun = (dow + 1) % 7
+        dow_spend[dow_sun] += -amt
+        dow_count[dow_sun] += 1
+    daily_avgs = [dow_spend[i] / dow_count[i] if dow_count[i] else 0.0 for i in range(7)]
+    overall = sum(daily_avgs) / 7 or 1.0
+    return [round(v / overall, 3) if overall > 0 else 1.0 for v in daily_avgs]
 
-    - daily_avg: average daily SPEND (debits only) across the observed window.
-    - trend_slope: least-squares slope of end-of-day running balance vs day index
-      (currency units per day; negative = spending faster than income, trending to zero).
-    - projected_zero_balance_date: where the fitted line crosses zero, extrapolated from the
-      last observed day. Capped at +10 years when the trend never crosses zero.
-    """
+
+def compute_burn_rate(transactions: list) -> dict:
     if not transactions:
         raise ValueError("transactions must be a non-empty array")
 
@@ -60,9 +62,8 @@ def compute_burn_rate(transactions: list) -> dict:
 
     total_spend = sum(-amt for _, amt in dated if amt < 0)
     daily_avg = total_spend / window_days
+    weekly_seasonal = _weekly_seasonal_factors(dated)
 
-    # End-of-day running balance for every day in the window (days without transactions carry
-    # the previous balance — they are real observations of "nothing changed").
     daily_net = [0.0] * window_days
     for txn_date, amt in dated:
         daily_net[(txn_date - first_day).days] += amt
@@ -72,7 +73,6 @@ def compute_burn_rate(transactions: list) -> dict:
         running += net
         balances.append(running)
 
-    # Hand-rolled least squares: slope = cov(t, balance) / var(t).
     n = window_days
     if n < 2:
         slope = 0.0
@@ -83,24 +83,34 @@ def compute_burn_rate(transactions: list) -> dict:
         cov_tb = sum((t - mean_t) * (balances[t] - mean_b) for t in range(n))
         slope = cov_tb / var_t
 
-    # Project from the fitted value at the last observed day, not the raw balance — the line is
-    # the model, staying on it keeps the projection consistent with the reported slope.
     if n < 2:
         fitted_last = balances[-1]
     else:
         fitted_last = mean_b + slope * ((n - 1) - mean_t)
 
+    residual_std = 0.0
+    if n >= 3:
+        residuals = [balances[t] - (mean_b + slope * (t - mean_t)) for t in range(n)]
+        mse = sum(r * r for r in residuals) / (n - 2)
+        residual_std = math.sqrt(mse)
+
     if slope < 0 and fitted_last > 0:
         days_to_zero = min(int(fitted_last / -slope) + 1, _PROJECTION_CAP_DAYS)
     elif fitted_last <= 0:
-        days_to_zero = 0  # already at/below zero on the fitted line
+        days_to_zero = 0
     else:
-        days_to_zero = _PROJECTION_CAP_DAYS  # flat or growing — never crosses on this trend
+        days_to_zero = _PROJECTION_CAP_DAYS
 
     projected = last_day + timedelta(days=days_to_zero)
+    interval_days = int(round(residual_std / abs(slope))) if slope < 0 and residual_std > 0 else 0
+    projected_low = last_day + timedelta(days=max(0, days_to_zero - interval_days))
+    projected_high = last_day + timedelta(days=min(days_to_zero + interval_days, _PROJECTION_CAP_DAYS))
 
     return {
         "daily_avg": round(daily_avg, 2),
         "trend_slope": round(slope, 2),
         "projected_zero_balance_date": projected.isoformat(),
+        "weekly_seasonal": weekly_seasonal,
+        "projected_zero_balance_date_low": projected_low.isoformat(),
+        "projected_zero_balance_date_high": projected_high.isoformat(),
     }

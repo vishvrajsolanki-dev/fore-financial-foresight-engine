@@ -4,31 +4,43 @@ import { callMl } from "@/lib/api/mlServer";
 import { prisma } from "@/lib/db/prisma";
 import type { ArchetypeLabel, FinancialContext, Transaction } from "@/types/financialContext";
 
-function txToDb(t: Transaction) {
+function txToDb(
+  t: Transaction & { confidence?: number; source?: string; fingerprint?: string; statementId?: string }
+) {
   return {
     date: t.date,
     category: t.category,
     amount: t.amount,
     descriptionEnc: t.description ? encryptField(t.description) : null,
     merchant: t.merchant ?? null,
+    confidence: t.confidence ?? null,
+    source: t.source ?? null,
+    fingerprint: t.fingerprint ?? null,
+    statementId: t.statementId ?? null,
   };
 }
 
 function txFromDb(
   row: {
+    id?: string;
     date: string;
     category: string;
     amount: number;
     descriptionEnc: string | null;
     merchant?: string | null;
+    confidence?: number | null;
+    source?: string | null;
   },
   opts: { decryptDescriptions: boolean }
 ): Transaction {
   return {
+    ...(row.id ? { id: row.id } : {}),
     date: row.date,
     category: row.category,
     amount: row.amount,
     merchant: row.merchant ?? undefined,
+    confidence: row.confidence ?? undefined,
+    source: row.source ?? undefined,
     description:
       opts.decryptDescriptions && row.descriptionEnc
         ? decryptField(row.descriptionEnc)
@@ -137,6 +149,16 @@ export async function listTransactionsPage(opts: {
     },
     orderBy: [{ date: "desc" }, { id: "desc" }],
     take: limit + 1,
+    select: {
+      id: true,
+      date: true,
+      category: true,
+      amount: true,
+      descriptionEnc: true,
+      merchant: true,
+      confidence: true,
+      source: true,
+    },
   });
   const page = rows.slice(0, limit);
   const nextCursor = rows.length > limit ? page[page.length - 1]?.id : null;
@@ -190,6 +212,87 @@ export async function computeAndPersistPast(
   return { past, benchmark };
 }
 
+export async function appendTransactionsToSession(opts: {
+  sessionId: string;
+  userId: string;
+  transactions: (Transaction & {
+    confidence?: number;
+    source?: string;
+    fingerprint?: string;
+    statementId?: string;
+  })[];
+  fileName: string;
+  rowCount: number;
+}) {
+  const session = await prisma.financialSession.findFirst({
+    where: { id: opts.sessionId, userId: opts.userId, isActive: true },
+  });
+  if (!session) throw new Error("Active session not found");
+
+  const upload = await prisma.statementUpload.create({
+    data: {
+      sessionId: opts.sessionId,
+      userId: opts.userId,
+      fileName: opts.fileName,
+      rowCount: opts.rowCount,
+    },
+  });
+
+  if (opts.transactions.length) {
+    await prisma.transaction.createMany({
+      data: opts.transactions.map((t) => ({
+        ...txToDb({ ...t, statementId: upload.id }),
+        sessionId: opts.sessionId,
+      })),
+    });
+  }
+
+  const allRows = await prisma.transaction.findMany({
+    where: { sessionId: opts.sessionId },
+    orderBy: { date: "asc" },
+    select: {
+      date: true,
+      category: true,
+      amount: true,
+      merchant: true,
+      descriptionEnc: true,
+    },
+  });
+  const allTxns = allRows.map((r) => txFromDb(r, { decryptDescriptions: true }));
+
+  await computeAndPersistPast(
+    opts.sessionId,
+    allTxns,
+    session.monthlyIncome,
+    session.incomeBracket,
+    session.cityTier
+  );
+
+  const consent = await prisma.userConsent.findUnique({ where: { userId: opts.userId } });
+  if (consent?.benchmarkOptInAt) {
+    const { contributeBenchmarkAggregate } = await import("@/lib/benchmark/aggregate");
+    await contributeBenchmarkAggregate({
+      incomeBracket: session.incomeBracket,
+      cityTier: session.cityTier,
+      transactions: allTxns,
+    });
+  }
+
+  return upload.id;
+}
+
+export async function loadExistingFingerprints(userId: string): Promise<Set<string>> {
+  const rows = await prisma.transaction.findMany({
+    where: { session: { userId }, fingerprint: { not: null } },
+    select: { fingerprint: true },
+  });
+  return new Set(rows.map((r) => r.fingerprint!).filter(Boolean));
+}
+
+export async function loadUserCategoryRules(userId: string) {
+  return prisma.categoryRule.findMany({ where: { userId } });
+}
+
 export async function createSessionFromTransactions(opts: {
   userId: string;
   transactions: Transaction[];
@@ -233,6 +336,15 @@ export async function createSessionFromTransactions(opts: {
           opts.incomeBracket,
           opts.cityTier
         );
+        const consent = await prisma.userConsent.findUnique({ where: { userId: opts.userId } });
+        if (consent?.benchmarkOptInAt) {
+          const { contributeBenchmarkAggregate } = await import("@/lib/benchmark/aggregate");
+          await contributeBenchmarkAggregate({
+            incomeBracket: opts.incomeBracket,
+            cityTier: opts.cityTier,
+            transactions: opts.transactions,
+          });
+        }
       } catch (err) {
         // Roll back active flag if analytics fail — leave session inactive.
         await prisma.financialSession.update({

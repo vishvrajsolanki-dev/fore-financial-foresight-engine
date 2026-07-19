@@ -12,6 +12,7 @@ import {
 import { verifyPassword } from "@/lib/auth/password";
 import { hashToken } from "@/lib/security/encryption";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
+import { clientKey, rateLimit } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,18 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ error: "DATABASE_URL not configured" }, { status: 503 });
+  }
+
+  const limited = await rateLimit({
+    key: clientKey(req, "auth-login"),
+    limit: 20,
+    windowMs: 15 * 60_000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many login attempts" },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
   }
 
   const body = await req.json().catch(() => null);

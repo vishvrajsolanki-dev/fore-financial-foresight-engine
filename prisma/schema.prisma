@@ -19,9 +19,12 @@ model User {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  sessions      FinancialSession[]
-  conversations Conversation[]
+  refreshTokens    RefreshToken[]
+  sessions         FinancialSession[]
+  conversations    Conversation[]
+  categoryRules    CategoryRule[]
+  statementUploads StatementUpload[]
+  consent          UserConsent?
 
   @@unique([provider, providerAccountId])
   @@map("users")
@@ -60,8 +63,9 @@ model FinancialSession {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  transactions  Transaction[]
-  conversations Conversation[]
+  transactions      Transaction[]
+  conversations     Conversation[]
+  statementUploads  StatementUpload[]
 
   @@index([userId, isActive])
   @@map("financial_sessions")
@@ -76,9 +80,15 @@ model Transaction {
   amount         Float
   descriptionEnc String?          @map("description_enc")
   merchant       String?
+  confidence     Float?
+  source         String?          // parser | user | rule
+  fingerprint    String?
+  statementId    String?          @map("statement_id")
+  statement      StatementUpload? @relation(fields: [statementId], references: [id], onDelete: SetNull)
   createdAt      DateTime         @default(now()) @map("created_at")
 
   @@index([sessionId, date])
+  @@index([fingerprint])
   @@map("transactions")
 }
 
@@ -111,4 +121,62 @@ model ConversationMessage {
 
   @@index([conversationId, createdAt])
   @@map("conversation_messages")
+}
+
+model CategoryRule {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchType String   @map("match_type") // merchant | contains
+  pattern   String
+  category  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("category_rules")
+}
+
+model StatementUpload {
+  id        String   @id @default(cuid())
+  sessionId String   @map("session_id")
+  session   FinancialSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName  String   @map("file_name")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  rowCount  Int      @map("row_count")
+
+  transactions Transaction[]
+
+  @@index([userId, uploadedAt])
+  @@map("statement_uploads")
+}
+
+model UserConsent {
+  id                String    @id @default(cuid())
+  userId            String    @unique @map("user_id")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  csvUploadAt       DateTime? @map("csv_upload_at")
+  aiProcessingAt    DateTime? @map("ai_processing_at")
+  benchmarkOptInAt  DateTime? @map("benchmark_opt_in_at")
+  privacyAcceptedAt DateTime? @map("privacy_accepted_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("user_consents")
+}
+
+model BenchmarkAggregate {
+  id            String   @id @default(cuid())
+  incomeBracket String   @map("income_bracket")
+  cityTier      String   @map("city_tier")
+  category      String
+  p25           Float
+  p50           Float
+  p75           Float
+  p90           Float
+  sampleCount   Int      @map("sample_count")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([incomeBracket, cityTier, category])
+  @@map("benchmark_aggregates")
 }

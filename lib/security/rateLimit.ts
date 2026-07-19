@@ -81,3 +81,9 @@ export function clientKey(req: Request, prefix: string): string {
   const ip = fwd || "unknown";
   return `${prefix}:${ip}`;
 }
+
+/** Prefer authenticated user id for AI quotas; fall back to IP. */
+export function actorKey(req: Request, prefix: string, userId?: string | null): string {
+  if (userId) return `${prefix}:user:${userId}`;
+  return clientKey(req, prefix);
+}

@@ -11,6 +11,8 @@ interface ChatMsg {
   toolCalled?: boolean;
   verified?: boolean;
   error?: boolean;
+  toolTrace?: { name: string; args?: unknown; result?: unknown }[];
+  mathOpen?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -21,6 +23,7 @@ const SUGGESTIONS = [
 
 const SLOW_AFTER_MS = 2000;
 const REQUEST_TIMEOUT_MS = 15000;
+const CONV_STORAGE_KEY = "fore_conversation_id";
 
 async function narrateVerdict(text: string): Promise<void> {
   if (!features.voiceNarration) return;
@@ -41,6 +44,11 @@ async function narrateVerdict(text: string): Promise<void> {
   }
 }
 
+function formatToolTrace(trace: ChatMsg["toolTrace"]): string {
+  if (!trace?.length) return "";
+  return JSON.stringify(trace, null, 2);
+}
+
 export default function DecideChat() {
   const { ctx, applyDecideVerdict, fullStackEnabled } = useFinancialContext();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -48,6 +56,7 @@ export default function DecideChat() {
   const [loading, setLoading] = useState(false);
   const [slow, setSlow] = useState(false);
   const [listening, setListening] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionId = ctx?.session_id ?? null;
 
@@ -56,8 +65,18 @@ export default function DecideChat() {
     setInput("");
     setLoading(false);
     setSlow(false);
+    setConversationId(null);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(CONV_STORAGE_KEY);
+    }
     if (slowTimer.current) clearTimeout(slowTimer.current);
   }, [sessionId]);
+
+  useEffect(() => {
+    if (conversationId && typeof window !== "undefined") {
+      sessionStorage.setItem(CONV_STORAGE_KEY, conversationId);
+    }
+  }, [conversationId]);
 
   async function ask(question: string) {
     const q = question.trim();
@@ -72,12 +91,14 @@ export default function DecideChat() {
       .filter((m) => !m.error)
       .map((m) => ({ role: m.role, content: m.text }));
 
+    const storedConv =
+      conversationId ||
+      (typeof window !== "undefined" ? sessionStorage.getItem(CONV_STORAGE_KEY) : null);
+
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      // Full-stack: server loads session context — do not ship the full ledger.
-      // Demo mode: send transactions for offline/local analysis.
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,6 +106,7 @@ export default function DecideChat() {
         body: JSON.stringify({
           message: q,
           history,
+          ...(storedConv ? { conversation_id: storedConv } : {}),
           ...(fullStackEnabled
             ? {}
             : {
@@ -110,9 +132,15 @@ export default function DecideChat() {
           { role: "assistant", text: data.error || "Something went wrong.", error: true },
         ]);
       } else {
+        if (data.conversation_id) setConversationId(data.conversation_id);
+
         const trace = Array.isArray(data.tool_trace) ? data.tool_trace : [];
         const afford = trace.find((t: { name?: string }) => t.name === "canIAfford") as
-          | { name: string; args?: { item?: string; amount?: number }; result?: { day_shift?: number; new_zero_balance_date?: string; amount?: number } }
+          | {
+              name: string;
+              args?: { item?: string; amount?: number };
+              result?: { day_shift?: number; new_zero_balance_date?: string; amount?: number };
+            }
           | undefined;
         const result = afford?.result;
         if (result?.new_zero_balance_date) {
@@ -130,8 +158,9 @@ export default function DecideChat() {
             role: "assistant",
             text: data.reply,
             toolCalled,
-            verified: data.verified !== false && toolCalled,
+            verified: data.verified !== false,
             error: false,
+            toolTrace: trace,
           },
         ]);
         if (toolCalled && data.reply) void narrateVerdict(data.reply);
@@ -154,6 +183,12 @@ export default function DecideChat() {
       setSlow(false);
       setLoading(false);
     }
+  }
+
+  function toggleMath(index: number) {
+    setMessages((msgs) =>
+      msgs.map((m, i) => (i === index ? { ...m, mathOpen: !m.mathOpen } : m))
+    );
   }
 
   function startVoiceInput() {
@@ -228,6 +263,22 @@ export default function DecideChat() {
                   </span>
                 )}
                 <p className="whitespace-pre-wrap text-sm sm:text-base">{m.text}</p>
+                {m.role === "assistant" && m.toolTrace && m.toolTrace.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="btn-ghost text-xs px-2 py-1"
+                      onClick={() => toggleMath(i)}
+                    >
+                      {m.mathOpen ? "Hide the math" : "Show the math"}
+                    </button>
+                    {m.mathOpen && (
+                      <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--card)] p-2 text-xs muted">
+                        {formatToolTrace(m.toolTrace)}
+                      </pre>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             {loading && (
@@ -279,11 +330,7 @@ export default function DecideChat() {
             {listening ? "🎤…" : "🎤"}
           </button>
         )}
-        <button
-          className="btn shrink-0"
-          type="submit"
-          disabled={loading || !input.trim()}
-        >
+        <button className="btn shrink-0" type="submit" disabled={loading || !input.trim()}>
           Ask
         </button>
       </form>

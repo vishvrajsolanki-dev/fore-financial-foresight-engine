@@ -31,7 +31,11 @@ if npx tsx scripts/unit_tests.ts; then pass "Unit tests"; else fail "Unit tests"
 
 echo ""
 echo "[2] ML pytest"
-if npm run test:ml; then pass "ML pytest (28)"; else fail "ML pytest" "failed"; fi
+if npm run test:ml; then pass "ML pytest"; else fail "ML pytest" "failed"; fi
+
+echo ""
+echo "[2b] TS ↔ Python parity (SKIP_PYTHON=1 when service unavailable)"
+if SKIP_PYTHON=1 npm run test:parity; then pass "ML parity"; else fail "ML parity" "failed"; fi
 
 echo ""
 echo "[3] Data verify (5 personas)"

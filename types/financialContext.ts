@@ -26,6 +26,9 @@ export interface Transaction {
   description?: string;
   /** Best-effort merchant token extracted from the bank narration (optional). */
   merchant?: string;
+  id?: string;
+  confidence?: number;
+  source?: string;
 }
 
 /**
@@ -44,6 +47,9 @@ export interface FinancialContext {
     daily_avg: number;
     trend_slope: number;
     projected_zero_balance_date: string;
+    weekly_seasonal?: number[];
+    projected_zero_balance_date_low?: string;
+    projected_zero_balance_date_high?: string;
   } | null;
   transactions: Transaction[];
   goal: {
