@@ -9,7 +9,8 @@ import { useRef, useState, type DragEvent } from "react";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 export default function CsvUploadPanel() {
-  const { fullStackEnabled, authUser, uploadCsv, pastLoading, activeId } = useFinancialContext();
+  const { fullStackEnabled, authUser, uploadCsv, pastLoading, activeId, loadSampleStatement } =
+    useFinancialContext();
   const [income, setIncome] = useState("60000");
   const [cityTier, setCityTier] = useState("Tier 2");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -56,7 +57,9 @@ export default function CsvUploadPanel() {
       <p className="muted text-sm">{demoMode ? "Bring your statement" : "Real bank data"}</p>
       <p className="mt-1 font-semibold">Upload your bank statement CSV</p>
       <p className="muted mt-1 text-sm">
-        Supports HDFC, ICICI, SBI, and Kotak exports (including Amount + Dr/Cr statements).{" "}
+        Your archetype is <strong>assigned</strong> from spending patterns (Euclidean nearest of 5
+        centroids) — you don&apos;t pick a personality. Supports HDFC, ICICI, SBI, and Kotak
+        exports.{" "}
         {demoMode
           ? "Parsed in your browser — transactions are sent only to the analysis service, never stored."
           : "Raw CSV is never stored — only normalized transactions with encrypted descriptions."}
@@ -149,6 +152,29 @@ export default function CsvUploadPanel() {
             <option>Tier 3</option>
           </select>
         </label>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className="btn-ghost text-xs px-3 py-1.5"
+          disabled={pastLoading}
+          onClick={async () => {
+            setError(null);
+            setSuccess(null);
+            try {
+              await loadSampleStatement();
+              setSuccess(
+                "Sample statement loaded — archetype assigned from its spending mix (not chosen)."
+              );
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Could not load sample");
+            }
+          }}
+        >
+          Try sample statement
+        </button>
+        <span className="muted text-xs">Optional — still runs the same assignment math</span>
       </div>
 
       {error && (

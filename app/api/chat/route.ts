@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const transactions = await loadSessionTransactions(auth.sid, auth.sub);
     if (!spine || transactions.length === 0) {
       return NextResponse.json(
-        { error: "No transactions in your session — upload a CSV or load a persona first." },
+        { error: "No transactions in your session — upload a bank CSV on PAST first." },
         { status: 400 }
       );
     }
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   } else {
     const transactions: Transaction[] = Array.isArray(body?.transactions) ? body.transactions : [];
     if (!transactions.length) {
-      return NextResponse.json({ error: "Select a persona or upload a CSV first." }, { status: 400 });
+      return NextResponse.json({ error: "Upload a bank CSV on PAST first." }, { status: 400 });
     }
     const fc = body?.financial_context && typeof body.financial_context === "object" ? body.financial_context : {};
     toolCtx = {

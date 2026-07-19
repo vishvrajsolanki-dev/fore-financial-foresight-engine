@@ -11,5 +11,6 @@ export const features = {
   exaGrounding: true,
   exportAhead: true,
   transportBenchmark: false, // invented transport row removed — only show if real transport spend exists
-  personaCompare: true,
+  /** Disabled: archetypes are assigned from spend, never user-selected (RupeeIQ model). */
+  personaCompare: false,
 } as const;

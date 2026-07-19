@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AuthNav from "@/components/AuthNav";
 import FeatureToolbar from "@/components/FeatureToolbar";
-import PersonaCompare from "@/components/PersonaCompare";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 const TABS = [
@@ -15,8 +14,8 @@ const TABS = [
 
 export default function FacesLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { personas, activeId, ctx, selectPersona, fullStackEnabled, authUser, currency, setCurrency } =
-    useFinancialContext();
+  const { activeId, ctx, fullStackEnabled, authUser, currency, setCurrency } = useFinancialContext();
+  const assigned = ctx?.archetype?.label;
 
   return (
     <div className="app-shell">
@@ -56,40 +55,36 @@ export default function FacesLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="app-toolbar-row">
-          <div className="app-persona-group">
-            <label htmlFor="persona" className="muted text-xs font-semibold uppercase tracking-wide">
-              Persona
-            </label>
-            <select
-              id="persona"
-              className="input app-persona-select"
-              value={activeId ?? ""}
-              onChange={(e) => selectPersona(e.target.value)}
-            >
-              <option value="" disabled>
-                Select…
-              </option>
-              {personas.map((p) => (
-                <option key={p.session_id} value={p.session_id}>
-                  {p.persona}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <span className="muted text-xs font-semibold uppercase tracking-wide shrink-0">
+              Assigned profile
+            </span>
+            {assigned ? (
+              <>
+                <span className="pill pill-success">{assigned}</span>
+                <span className="muted text-xs hidden sm:inline">
+                  from your spending mix · not selected
+                </span>
+              </>
+            ) : (
+              <span className="muted text-sm">
+                Upload a bank CSV on PAST — we assign one of 5 archetypes
+              </span>
+            )}
           </div>
-          {ctx?.persona && <span className="pill truncate max-w-[14rem]">{ctx.persona}</span>}
-          {ctx?.archetype?.label && (
-            <span className="pill pill-success hidden sm:inline-flex">{ctx.archetype.label}</span>
+          {ctx?.persona && ctx.persona !== assigned && (
+            <span className="pill truncate max-w-[14rem]">{ctx.persona}</span>
           )}
-          <PersonaCompare />
         </div>
       </header>
 
       <main className="app-main">
         {!activeId && pathname !== "/past" ? (
           <div className="card rise-in py-12 text-center">
-            <p className="text-lg font-semibold">Select a persona to continue</p>
+            <p className="text-lg font-semibold">Upload your statement to continue</p>
             <p className="muted mt-2 max-w-md mx-auto text-sm">
-              Choose a demo persona above, or upload your bank CSV on{" "}
+              Your archetype is assigned from spending patterns (nearest of 5 centroids) — same idea
+              as RupeeIQ. Start on{" "}
               <Link href="/past" className="underline" style={{ color: "var(--accent)" }}>
                 PAST
               </Link>
@@ -105,8 +100,8 @@ export default function FacesLayout({ children }: { children: React.ReactNode })
 
       <footer className="app-footer">
         <p className="muted text-xs">
-          {ctx?.persona ? `${ctx.persona} · ` : ""}
-          {!authUser && fullStackEnabled ? "Demo mode · " : ""}
+          {assigned ? `${assigned} · ` : ""}
+          {!authUser && fullStackEnabled ? "Signed out · " : ""}
           Not licensed financial advice — hackathon demo only.
         </p>
       </footer>

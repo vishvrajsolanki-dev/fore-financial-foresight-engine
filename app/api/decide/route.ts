@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
     transactions = await loadSessionTransactions(auth.sid, auth.sub);
     if (!spine || transactions.length === 0) {
       return NextResponse.json(
-        { error: "No transactions in your session — upload a CSV or load a persona first." },
+        { error: "No transactions in your session — upload a bank CSV on PAST first." },
         { status: 400 }
       );
     }
@@ -289,7 +289,7 @@ export async function POST(req: NextRequest) {
         : null;
     if (transactions.length === 0) {
       return NextResponse.json(
-        { error: "Select a persona first — no transactions in context." },
+        { error: "Upload a bank CSV on PAST first — no transactions in context." },
         { status: 400 }
       );
     }

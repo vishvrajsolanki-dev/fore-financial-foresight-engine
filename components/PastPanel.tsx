@@ -26,6 +26,7 @@ import FaceIntro from "@/components/FaceIntro";
 import { CardSkeleton, ChartSkeleton } from "@/components/LoadingSkeleton";
 import { features } from "@/lib/features";
 import { formatMoney } from "@/lib/format/currency";
+import { archetypeCopy } from "@/lib/ml/archetypeCopy";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 function inr(n: number, currency: "INR" | "USD" | "EUR" = "INR"): string {
@@ -136,7 +137,8 @@ export default function PastPanel() {
           blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
         />
         <div className="card muted text-sm">
-          No analysis yet — upload a CSV above or pick a demo persona.
+          No analysis yet — upload your bank CSV above. We&apos;ll assign your archetype from the
+          spend mix (RupeeIQ-style), not from a persona picker.
         </div>
       </div>
     );
@@ -144,20 +146,28 @@ export default function PastPanel() {
 
   const { archetype, burn_rate } = ctx;
   const slopePositive = burn_rate.trend_slope >= 0;
+  const copy = archetypeCopy(archetype.label);
 
   return (
     <div className="grid gap-4">
       <FaceIntro
         face="PAST"
         title="Your spending, decoded"
-        blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+        blurb="Archetype assigned from spending patterns, burn-rate trend, and zero-balance runway."
       />
       <div className="card">
-        <p className="muted text-sm">Your spending archetype</p>
+        <p className="muted text-sm">Assigned spending archetype</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <span className="text-2xl font-bold">{archetype.label}</span>
-          <span className="pill">nearest of 5 centroids</span>
+          <span className="pill">assigned · Euclidean nearest of 5</span>
         </div>
+        <p className="mt-3 text-sm">{copy.blurb}</p>
+        <p className="muted mt-2 text-sm">
+          <span className="font-semibold" style={{ color: "var(--text)" }}>
+            Tip:{" "}
+          </span>
+          {copy.tip}
+        </p>
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData} outerRadius="72%">
