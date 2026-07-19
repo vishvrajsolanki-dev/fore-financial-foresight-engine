@@ -44,12 +44,14 @@ DATABASE_URL=${DATABASE_URL}
 JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
 DATA_ENCRYPTION_KEY=${DATA_ENCRYPTION_KEY}
 
-# Fill after creating OAuth apps
+# Google OAuth (optional)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-MS_CLIENT_ID=
-MS_CLIENT_SECRET=
-MS_TENANT_ID=common
+
+# Microsoft OAuth skipped by default — leave blank
+# MS_CLIENT_ID=
+# MS_CLIENT_SECRET=
+# MS_TENANT_ID=common
 
 GROQ_API_KEY=
 GROQ_MODEL=llama-3.1-8b-instant
@@ -71,4 +73,4 @@ echo "  npx prisma db push"
 echo "  npm run dev"
 echo ""
 echo "Then open http://localhost:3000/api/auth/providers"
-echo "Add Google/Microsoft keys to $ENV_FILE when you have them."
+echo "Optional: add Google keys to $ENV_FILE. Microsoft can stay blank."
