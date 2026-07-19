@@ -1,8 +1,3 @@
-// FORE — components/PastPanel.tsx
-// Owner: TASK-002 (Drashti). Archetype label + radar chart (distances) + burn-rate + balance line.
-// Data source: lib/api/pastClient.ts via the shared context — never a direct fetch here, so the
-// PLACEHOLDER-A -> real swap stayed a one-file change.
-
 "use client";
 
 import { useMemo } from "react";
@@ -29,7 +24,7 @@ import { formatMoney } from "@/lib/format/currency";
 import { archetypeCopy } from "@/lib/ml/archetypeCopy";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
-function inr(n: number, currency: "INR" | "USD" | "EUR" = "INR"): string {
+function money(n: number, currency: "INR" | "USD" | "EUR" = "INR"): string {
   return formatMoney(n, currency);
 }
 
@@ -40,7 +35,7 @@ export default function PastPanel() {
     if (!ctx?.archetype) return [];
     return Object.entries(ctx.archetype.distances).map(([label, distance]) => ({
       label: label.replace(" ", "\n"),
-      closeness: Number((1 / (1 + distance)).toFixed(3)), // higher = closer match
+      closeness: Number((1 / (1 + distance)).toFixed(3)),
     }));
   }, [ctx?.archetype]);
 
@@ -56,8 +51,7 @@ export default function PastPanel() {
       const weekStart = new Date(d);
       weekStart.setUTCDate(d.getUTCDate() - day);
       const iso = weekStart.toISOString().slice(0, 10);
-      const key = iso.slice(5);
-      weekMap.set(key, { balance: Math.round(running), iso });
+      weekMap.set(iso.slice(5), { balance: Math.round(running), iso });
     }
     return Array.from(weekMap.entries()).map(([date, { balance, iso }]) => ({
       date,
@@ -94,7 +88,7 @@ export default function PastPanel() {
         <FaceIntro
           face="PAST"
           title="Your spending, decoded"
-          blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+          blurb="Runway first — then the archetype assigned from your spend mix."
         />
         {features.loadingSkeletons ? (
           <>
@@ -113,17 +107,13 @@ export default function PastPanel() {
         <FaceIntro
           face="PAST"
           title="Your spending, decoded"
-          blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+          blurb="Runway first — then the archetype assigned from your spend mix."
         />
         <div className="card">
           <p className="font-medium" style={{ color: "var(--danger)" }}>
             Couldn&apos;t load PAST data
           </p>
           <p className="muted mt-1 text-sm">{pastError}</p>
-          <p className="muted mt-2 text-sm">
-            Is the ML service running? Set <code>ML_MODE=inline</code> on Vercel (no Render needed) or
-            <code>RENDER_ML_BASE_URL</code> for an external Python service.
-          </p>
         </div>
       </div>
     );
@@ -134,11 +124,10 @@ export default function PastPanel() {
         <FaceIntro
           face="PAST"
           title="Your spending, decoded"
-          blurb="Archetype, burn-rate trend, and zero-balance projection from real transaction math."
+          blurb="Upload a statement above — we assign your archetype from the spend mix."
         />
         <div className="card muted text-sm">
-          No analysis yet — upload your bank CSV above. We&apos;ll assign your archetype from the
-          spend mix (RupeeIQ-style), not from a persona picker.
+          No analysis yet. Drop your bank CSV to get a runway date and an assigned profile.
         </div>
       </div>
     );
@@ -147,88 +136,99 @@ export default function PastPanel() {
   const { archetype, burn_rate } = ctx;
   const slopePositive = burn_rate.trend_slope >= 0;
   const copy = archetypeCopy(archetype.label);
+  const runway = burn_rate.runway_days_if_income_stopped ?? 0;
+  const sym = currency === "INR" ? "₹" : currency === "EUR" ? "€" : "$";
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
       <FaceIntro
         face="PAST"
         title="Your spending, decoded"
-        blurb="Archetype assigned from spending patterns, burn-rate trend, and zero-balance runway."
+        blurb="Archetype assigned from spending patterns — runway from real burn math."
       />
-      <div className="card">
-        <p className="muted text-sm">Assigned spending archetype</p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span className="text-2xl font-bold">{archetype.label}</span>
-          <span className="pill">assigned · Euclidean nearest of 5</span>
-        </div>
-        <p className="mt-3 text-sm">{copy.blurb}</p>
-        <p className="muted mt-2 text-sm">
-          <span className="font-semibold" style={{ color: "var(--text)" }}>
-            Tip:{" "}
-          </span>
-          {copy.tip}
+
+      {/* Hero: runway / zero date leads */}
+      <section className="hero-stat rise-in" aria-labelledby="runway-heading">
+        <p className="face-kicker" id="runway-heading">
+          If income stopped
         </p>
-        <div className="mt-4 h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="var(--border)" />
-              <PolarAngleAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 12 }} />
-              <PolarRadiusAxis tick={{ fill: "var(--muted)", fontSize: 10 }} domain={[0, 1]} />
-              <Radar
-                dataKey="closeness"
-                stroke="var(--accent)"
-                fill="var(--accent)"
-                fillOpacity={0.35}
-                isAnimationActive={features.chartAnimations}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 12,
-                  color: "var(--text)",
-                }}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
+        <p className="hero-stat-value mt-2">{burn_rate.projected_zero_balance_date}</p>
+        <p className="mt-2 text-sm sm:text-base">
+          <span className="tabular font-semibold">{runway}</span> day
+          {runway === 1 ? "" : "s"} of runway at{" "}
+          <span className="tabular font-semibold">{money(burn_rate.daily_avg, currency)}</span>
+          /day spend
+        </p>
+        <p className="muted mt-2 text-xs max-w-xl">
+          Straight-line balance trend: {slopePositive ? "net accumulating" : "net depleting"} by{" "}
+          {money(Math.abs(burn_rate.trend_slope), currency)}/day — not a forecast accuracy claim.
+        </p>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="card">
+          <p className="muted text-sm">Assigned spending archetype</p>
+          <div className="mt-2 flex flex-wrap items-baseline gap-3">
+            <h2 className="display text-3xl">{archetype.label}</h2>
+            <span className="pill">Euclidean nearest of 5</span>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed">{copy.blurb}</p>
+          <p className="muted mt-2 text-sm">
+            <span className="font-semibold" style={{ color: "var(--text)" }}>
+              Tip:{" "}
+            </span>
+            {copy.tip}
+          </p>
         </div>
-        <p className="muted text-xs">Closeness = 1 / (1 + Euclidean distance). Higher is a closer match.</p>
+
+        <div
+          className="card"
+          role="img"
+          aria-label={`Archetype closeness radar. Nearest: ${archetype.label}.`}
+        >
+          <p className="muted text-sm mb-2">Closeness to each centroid</p>
+          <div className="h-56 sm:h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} outerRadius="70%">
+                <PolarGrid stroke="var(--border)" />
+                <PolarAngleAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 11 }} />
+                <PolarRadiusAxis tick={{ fill: "var(--muted)", fontSize: 10 }} domain={[0, 1]} />
+                <Radar
+                  dataKey="closeness"
+                  stroke="var(--accent)"
+                  fill="var(--accent)"
+                  fillOpacity={0.32}
+                  isAnimationActive={features.chartAnimations}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="muted text-xs">Higher = closer match (1 / (1 + distance)).</p>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="card">
-          <p className="muted text-sm">Daily burn (consumption)</p>
-          <p className="text-2xl font-bold mt-1">{inr(burn_rate.daily_avg, currency)}/day</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="stat-tile">
+          <p className="muted text-xs uppercase tracking-wide font-semibold">Daily burn</p>
+          <p className="display text-2xl mt-1 tabular">{money(burn_rate.daily_avg, currency)}/day</p>
         </div>
-        <div className="card">
-          <p className="muted text-sm">Balance trend</p>
+        <div className="stat-tile">
+          <p className="muted text-xs uppercase tracking-wide font-semibold">Balance trend</p>
           <p
-            className="text-2xl font-bold mt-1"
-            style={{ color: slopePositive ? "var(--accent-2)" : "var(--danger)" }}
+            className="display text-2xl mt-1 tabular"
+            style={{ color: slopePositive ? "var(--positive)" : "var(--negative)" }}
           >
-            {slopePositive ? "▲" : "▼"} {inr(Math.abs(burn_rate.trend_slope), currency)}/day
-          </p>
-          <p className="muted text-xs mt-1">
-            {slopePositive ? "Net accumulating" : "Net depleting"} (straight-line trend)
-          </p>
-        </div>
-        <div className="card">
-          <p className="muted text-sm">Projected zero-balance</p>
-          <p className="text-2xl font-bold mt-1">{burn_rate.projected_zero_balance_date}</p>
-          <p className="muted text-xs mt-1">
-            If income stopped at today&apos;s spend rate
-            {typeof burn_rate.runway_days_if_income_stopped === "number"
-              ? ` · ${burn_rate.runway_days_if_income_stopped} day(s) of runway`
-              : ""}
+            {slopePositive ? "+" : "−"}
+            {money(Math.abs(burn_rate.trend_slope), currency)}/day
           </p>
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" role="img" aria-label={balanceWindowLabel}>
         <p className="muted text-sm mb-3">{balanceWindowLabel}</p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={balanceSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+            <LineChart data={balanceSeries} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fill: "var(--muted)", fontSize: 11 }} minTickGap={24} />
               <YAxis
@@ -242,7 +242,7 @@ export default function PastPanel() {
                   stroke="var(--accent-2)"
                   strokeDasharray="6 3"
                   label={{
-                    value: `Projected ${currency === "INR" ? "₹" : currency === "EUR" ? "€" : "$"}0 · ${projectedZeroMarker.label}`,
+                    value: `Projected ${sym}0 · ${projectedZeroMarker.label}`,
                     position: "insideTopRight",
                     fill: "var(--muted)",
                     fontSize: 10,
@@ -250,7 +250,7 @@ export default function PastPanel() {
                 />
               )}
               <Tooltip
-                formatter={(v: number) => inr(v, currency)}
+                formatter={(v: number) => money(v, currency)}
                 contentStyle={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
@@ -262,7 +262,7 @@ export default function PastPanel() {
                 type="monotone"
                 dataKey="balance"
                 stroke="var(--accent)"
-                strokeWidth={2}
+                strokeWidth={2.25}
                 dot={false}
                 isAnimationActive={features.chartAnimations}
               />

@@ -46,12 +46,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10 sm:py-14">
-      <div className="card rise-in p-7">
-        <p className="fore-brand text-2xl">
+    <div className="auth-grain relative min-h-screen">
+      <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10 sm:py-14">
+      <div className="card rise-in p-7 sm:p-8">
+        <p className="fore-brand text-3xl">
           F<span style={{ color: "var(--accent)" }}>O</span>RE
         </p>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight">Create your account</h1>
+        <h1 className="display mt-3 text-2xl">Create your account</h1>
         <p className="muted mt-1 text-sm">
           After you upload a bank CSV on PAST, FORE assigns your spending archetype from the data
           (nearest of 5 centroids) — you never pick a personality.
@@ -117,6 +118,7 @@ export default function RegisterPage() {
             Log in
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );

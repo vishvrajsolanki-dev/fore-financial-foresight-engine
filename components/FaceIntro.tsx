@@ -1,5 +1,4 @@
-// FORE — components/FaceIntro.tsx
-// TASK-010 polish: shared face header so PAST / DECIDE / AHEAD read as one product, not three skins.
+// Shared face header — one purpose per section, display type for title.
 
 export default function FaceIntro({
   face,
@@ -11,10 +10,10 @@ export default function FaceIntro({
   blurb: string;
 }) {
   return (
-    <div className="card rise-in">
+    <header className="rise-in pb-1">
       <p className="face-kicker">{face}</p>
-      <p className="mt-1 text-lg font-semibold">{title}</p>
-      <p className="muted mt-1 text-sm">{blurb}</p>
-    </div>
+      <h1 className="display mt-2 text-2xl sm:text-3xl">{title}</h1>
+      <p className="muted mt-2 max-w-2xl text-sm sm:text-base leading-relaxed">{blurb}</p>
+    </header>
   );
 }

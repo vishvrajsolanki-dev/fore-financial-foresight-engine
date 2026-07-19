@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CalendarRange, MessageSquareText, TrendingUp, Settings } from "lucide-react";
 import AuthNav from "@/components/AuthNav";
 import FeatureToolbar from "@/components/FeatureToolbar";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
 const TABS = [
-  { href: "/past", label: "PAST", hint: "Who you are" },
-  { href: "/decide", label: "DECIDE", hint: "Can I afford it?" },
-  { href: "/ahead", label: "AHEAD", hint: "Where you're headed" },
+  { href: "/past", label: "PAST", hint: "Decoded spend", icon: CalendarRange },
+  { href: "/decide", label: "DECIDE", hint: "Can I afford it?", icon: MessageSquareText },
+  { href: "/ahead", label: "AHEAD", hint: "Pace & peers", icon: TrendingUp },
 ];
 
 export default function FacesLayout({ children }: { children: React.ReactNode }) {
@@ -19,92 +20,104 @@ export default function FacesLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="app-shell">
-      <header className="app-topbar rise-in">
-        <div className="app-topbar-row">
-          <Link href="/past" className="fore-brand text-xl sm:text-2xl shrink-0">
-            F<span className="text-[var(--accent)]">O</span>RE
-          </Link>
-
-          <nav className="app-tabs" aria-label="FORE faces">
-            {TABS.map((t) => {
-              const active = pathname === t.href;
-              return (
-                <Link
-                  key={t.href}
-                  href={t.href}
-                  className={`face-tab face-tab-compact ${active ? "face-tab-active" : ""}`}
-                >
+      <aside className="app-sidebar" aria-label="Primary">
+        <Link href="/past" className="fore-brand text-2xl px-2">
+          F<span style={{ color: "var(--accent)" }}>O</span>RE
+        </Link>
+        <p className="muted text-xs px-2 leading-relaxed">
+          Spend patterns assign your profile — you never pick a persona.
+        </p>
+        <nav className="flex flex-col gap-1 mt-2" aria-label="FORE faces">
+          {TABS.map((t) => {
+            const active = pathname === t.href;
+            const Icon = t.icon;
+            return (
+              <Link
+                key={t.href}
+                href={t.href}
+                className={`app-nav-link ${active ? "app-nav-link-active" : ""}`}
+              >
+                <Icon size={18} strokeWidth={1.75} aria-hidden />
+                <span className="flex flex-col">
                   <span>{t.label}</span>
-                  <span className={`face-tab-hint hidden md:inline ${active ? "" : "muted"}`}>
-                    {t.hint}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="app-topbar-actions">
-            <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
-            {fullStackEnabled && (
-              <Link href="/settings" className="btn-ghost text-xs px-3 py-1.5">
-                Settings
+                  <span className="text-[0.65rem] font-medium opacity-70">{t.hint}</span>
+                </span>
               </Link>
+            );
+          })}
+        </nav>
+        <div className="mt-auto flex flex-col gap-2 px-1">
+          {fullStackEnabled && (
+            <Link href="/settings" className="app-nav-link">
+              <Settings size={18} strokeWidth={1.75} aria-hidden />
+              Settings
+            </Link>
+          )}
+          <AuthNav />
+        </div>
+      </aside>
+
+      <div className="app-content">
+        <header className="app-contextbar">
+          <Link href="/past" className="fore-brand text-xl sm:hidden">
+            F<span style={{ color: "var(--accent)" }}>O</span>RE
+          </Link>
+          <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+            <span className="muted text-xs font-semibold uppercase tracking-wide">Assigned</span>
+            {assigned ? (
+              <span className="pill pill-success">{assigned}</span>
+            ) : (
+              <span className="muted text-sm">Upload a CSV on PAST</span>
             )}
+          </div>
+          <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
+          <div className="sm:hidden">
             <AuthNav />
           </div>
-        </div>
+        </header>
 
-        <div className="app-toolbar-row">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <span className="muted text-xs font-semibold uppercase tracking-wide shrink-0">
-              Assigned profile
-            </span>
-            {assigned ? (
-              <>
-                <span className="pill pill-success">{assigned}</span>
-                <span className="muted text-xs hidden sm:inline">
-                  from your spending mix · not selected
-                </span>
-              </>
-            ) : (
-              <span className="muted text-sm">
-                Upload a bank CSV on PAST — we assign one of 5 archetypes
-              </span>
-            )}
-          </div>
-          {ctx?.persona && ctx.persona !== assigned && (
-            <span className="pill truncate max-w-[14rem]">{ctx.persona}</span>
+        <main id="main" className="app-main">
+          {!activeId && pathname !== "/past" ? (
+            <div className="card rise-in py-12 text-center">
+              <p className="display text-2xl">Upload your statement to continue</p>
+              <p className="muted mt-2 max-w-md mx-auto text-sm">
+                Your archetype is assigned from spending patterns. Start on{" "}
+                <Link href="/past" className="underline" style={{ color: "var(--accent)" }}>
+                  PAST
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
+            <div key={pathname} className="stagger grid gap-4">
+              {children}
+            </div>
           )}
-        </div>
-      </header>
+        </main>
 
-      <main className="app-main">
-        {!activeId && pathname !== "/past" ? (
-          <div className="card rise-in py-12 text-center">
-            <p className="text-lg font-semibold">Upload your statement to continue</p>
-            <p className="muted mt-2 max-w-md mx-auto text-sm">
-              Your archetype is assigned from spending patterns (nearest of 5 centroids) — same idea
-              as RupeeIQ. Start on{" "}
-              <Link href="/past" className="underline" style={{ color: "var(--accent)" }}>
-                PAST
-              </Link>
-              .
-            </p>
-          </div>
-        ) : (
-          <div key={pathname} className="rise-in grid gap-4">
-            {children}
-          </div>
-        )}
-      </main>
-
-      <footer className="app-footer">
-        <p className="muted text-xs">
+        <footer className="app-footer">
           {assigned ? `${assigned} · ` : ""}
           {!authUser && fullStackEnabled ? "Signed out · " : ""}
           Not licensed financial advice — hackathon demo only.
-        </p>
-      </footer>
+        </footer>
+      </div>
+
+      <nav className="mobile-tabbar" aria-label="Mobile faces">
+        {TABS.map((t) => {
+          const active = pathname === t.href;
+          const Icon = t.icon;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={`mobile-tab ${active ? "mobile-tab-active" : ""}`}
+            >
+              <Icon size={20} strokeWidth={1.75} aria-hidden />
+              {t.label}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
