@@ -7,7 +7,6 @@ import {
   generateRefreshTokenRaw,
   refreshTokenExpiry,
   signAccessToken,
-  verifyAccessToken,
 } from "@/lib/auth/jwt";
 import { hashToken } from "@/lib/security/encryption";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";

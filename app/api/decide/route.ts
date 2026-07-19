@@ -8,6 +8,7 @@ import {
   canIAfford,
   type CanIAffordOutput,
 } from "@/lib/tools/canIAfford";
+import { clientKey, rateLimit } from "@/lib/security/rateLimit";
 import type { FinancialContext, Transaction } from "@/types/financialContext";
 
 export const runtime = "nodejs";
@@ -239,6 +240,14 @@ async function selfVerifyReply(
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit({ key: clientKey(req, "decide"), limit: 30, windowMs: 60_000 });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests — try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const message: unknown = body?.message;
   const transactions: Transaction[] = Array.isArray(body?.transactions) ? body.transactions : [];
@@ -332,7 +341,7 @@ export async function POST(req: NextRequest) {
       exa_used: !!exaHint,
     });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : "Groq request failed";
-    return NextResponse.json({ error: detail }, { status: 502 });
+    console.error("DECIDE Groq error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Decision service temporarily unavailable" }, { status: 502 });
   }
 }

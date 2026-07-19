@@ -1,12 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 import { isAuthPayload, requireAuth } from "@/lib/auth/session";
 import { patchSessionContext, sessionToContext } from "@/lib/db/contextService";
 import { isDatabaseConfigured } from "@/lib/db/prisma";
-import type { FinancialContext } from "@/types/financialContext";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const patchSchema = z
+  .object({
+    goal: z
+      .object({
+        target_amount: z.number().finite().positive(),
+        target_date: z.string().min(4),
+        on_pace: z.boolean(),
+        pace_gap_days: z.number().finite().nullable(),
+      })
+      .nullable()
+      .optional(),
+    last_decide_verdict: z
+      .object({
+        item: z.string(),
+        amount: z.number().finite(),
+        day_shift: z.number().finite(),
+        new_zero_balance_date: z.string().min(4),
+      })
+      .nullable()
+      .optional(),
+    burn_rate: z
+      .object({
+        daily_avg: z.number().finite(),
+        trend_slope: z.number().finite(),
+        projected_zero_balance_date: z.string().min(4),
+      })
+      .nullable()
+      .optional(),
+  })
+  .strict();
 
 export async function GET(req: NextRequest) {
   if (!isDatabaseConfigured()) {
@@ -18,7 +49,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const ctx = await sessionToContext(auth.sid);
+  const ctx = await sessionToContext(auth.sid, auth.sub);
   if (!ctx) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
@@ -37,22 +68,21 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const patch = body as Partial<{
-    goal: FinancialContext["goal"];
-    last_decide_verdict: FinancialContext["last_decide_verdict"];
-    burn_rate: FinancialContext["burn_rate"];
-  }>;
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid patch payload" }, { status: 400 });
+  }
 
   const ok = await patchSessionContext(auth.sid, auth.sub, {
-    goal: patch.goal,
-    lastDecideVerdict: patch.last_decide_verdict,
-    burnRate: patch.burn_rate,
+    goal: parsed.data.goal,
+    lastDecideVerdict: parsed.data.last_decide_verdict,
+    burnRate: parsed.data.burn_rate,
   });
 
   if (!ok) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const ctx = await sessionToContext(auth.sid);
+  const ctx = await sessionToContext(auth.sid, auth.sub);
   return NextResponse.json({ context: ctx });
 }

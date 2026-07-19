@@ -38,6 +38,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File too large (max 5 MB)" }, { status: 413 });
   }
 
+  const nameOk = /\.csv$/i.test(file.name);
+  const typeOk =
+    !file.type ||
+    file.type === "text/csv" ||
+    file.type === "application/vnd.ms-excel" ||
+    file.type === "application/csv" ||
+    file.type === "text/plain";
+  if (!nameOk || !typeOk) {
+    return NextResponse.json({ error: "Only .csv files are accepted" }, { status: 415 });
+  }
+
   const monthlyIncome = Number(monthlyIncomeRaw);
   if (!Number.isFinite(monthlyIncome) || monthlyIncome <= 0) {
     return NextResponse.json({ error: "monthlyIncome must be a positive number" }, { status: 400 });
@@ -67,7 +78,7 @@ export async function POST(req: NextRequest) {
   });
 
   const accessToken = await signAccessToken({ sub: auth.sub, sid: sessionId });
-  const ctx = await sessionToContext(sessionId);
+  const ctx = await sessionToContext(sessionId, auth.sub);
 
   const res = NextResponse.json({
     sessionId,
@@ -77,6 +88,7 @@ export async function POST(req: NextRequest) {
       skippedRows: parsed.skippedRows,
       detectedFormat: parsed.detectedFormat,
       warnings: parsed.warnings,
+      duplicatesRemoved: parsed.duplicatesRemoved,
     },
   });
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));

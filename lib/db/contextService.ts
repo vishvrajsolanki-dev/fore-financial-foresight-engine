@@ -27,11 +27,19 @@ function txFromDb(row: {
   };
 }
 
-export async function sessionToContext(sessionId: string): Promise<FinancialContext | null> {
-  const session = await prisma.financialSession.findUnique({
-    where: { id: sessionId },
-    include: { transactions: { orderBy: { date: "asc" } } },
-  });
+export async function sessionToContext(
+  sessionId: string,
+  userId?: string
+): Promise<FinancialContext | null> {
+  const session = userId
+    ? await prisma.financialSession.findFirst({
+        where: { id: sessionId, userId },
+        include: { transactions: { orderBy: { date: "asc" } } },
+      })
+    : await prisma.financialSession.findUnique({
+        where: { id: sessionId },
+        include: { transactions: { orderBy: { date: "asc" } } },
+      });
   if (!session) return null;
 
   const transactions = session.transactions.map(txFromDb);

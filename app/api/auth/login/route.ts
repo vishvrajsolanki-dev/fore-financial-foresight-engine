@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
 
   const { email, password } = parsed.data;
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  // Always run bcrypt to avoid email-existence timing oracles.
+  const DUMMY_HASH = "$2b$12$ZpDpWX8miIU.YMoVwF9kFuj9ADIq6.H/xY6P7yJCnMz/QVCfLAv5q";
+  const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !ok) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }
 

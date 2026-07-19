@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { clientKey, rateLimit } from "@/lib/security/rateLimit";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Optional ElevenLabs TTS for DECIDE verdict narration (TIER2-11). */
 export async function POST(req: NextRequest) {
+  const limited = rateLimit({ key: clientKey(req, "voice"), limit: 20, windowMs: 60_000 });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const key = process.env.ELEVENLABS_API_KEY?.trim();
   if (!key) {
     return NextResponse.json({ error: "ELEVENLABS_API_KEY not configured" }, { status: 503 });
@@ -33,8 +43,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: err || "ElevenLabs request failed" }, { status: 502 });
+      console.error("ElevenLabs error status:", res.status);
+      return NextResponse.json({ error: "Voice narration failed" }, { status: 502 });
     }
 
     const audio = Buffer.from(await res.arrayBuffer());
@@ -45,7 +55,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : "TTS failed";
-    return NextResponse.json({ error: detail }, { status: 502 });
+    console.error("TTS error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Voice narration failed" }, { status: 502 });
   }
 }
