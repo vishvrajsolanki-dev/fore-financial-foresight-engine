@@ -42,7 +42,7 @@ jobs:
       - name: ML pytest
         run: |
           cd ml-service
-          pip install -q -r requirements.txt 2>/dev/null || pip install -q fastapi uvicorn pytest httpx
+          pip install -q -r requirements.txt pytest httpx
           python3 -m pytest -q
 
       - name: Build
