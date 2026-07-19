@@ -150,26 +150,43 @@ function LoginForm() {
           <p className="muted mt-1 text-sm">Sign in to see your money, clearly.</p>
 
           <div className="mt-6 grid gap-2.5">
-            <button
-              type="button"
-              className="btn-provider"
-              disabled={busy || !providers.google}
-              title={providers.google ? undefined : "Configure GOOGLE_CLIENT_ID/SECRET"}
-              onClick={() => providerSignIn("google")}
-            >
-              {providerLoading === "google" ? <span className="spinner" style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }} /> : <GoogleIcon />}
-              Continue with Google
-            </button>
-            <button
-              type="button"
-              className="btn-provider"
-              disabled={busy || !providers.microsoft}
-              title={providers.microsoft ? undefined : "Configure MS_CLIENT_ID/SECRET"}
-              onClick={() => providerSignIn("microsoft")}
-            >
-              {providerLoading === "microsoft" ? <span className="spinner" style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }} /> : <MicrosoftIcon />}
-              Continue with Microsoft
-            </button>
+            {providers.google && (
+              <button
+                type="button"
+                className="btn-provider"
+                disabled={busy}
+                onClick={() => providerSignIn("google")}
+              >
+                {providerLoading === "google" ? (
+                  <span
+                    className="spinner"
+                    style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }}
+                  />
+                ) : (
+                  <GoogleIcon />
+                )}
+                Continue with Google
+              </button>
+            )}
+            {/* Microsoft is optional — only shown when MS_CLIENT_ID/SECRET are set */}
+            {providers.microsoft && (
+              <button
+                type="button"
+                className="btn-provider"
+                disabled={busy}
+                onClick={() => providerSignIn("microsoft")}
+              >
+                {providerLoading === "microsoft" ? (
+                  <span
+                    className="spinner"
+                    style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }}
+                  />
+                ) : (
+                  <MicrosoftIcon />
+                )}
+                Continue with Microsoft
+              </button>
+            )}
             <button
               type="button"
               className="btn-provider"
