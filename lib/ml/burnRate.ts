@@ -102,19 +102,28 @@ export function computeBurnRate(transactions: Transaction[]) {
     residualStd = Math.sqrt(mse);
   }
 
-  let daysToZero: number;
+  // Trend-based zero (OLS) — informational; can be far out if net-accumulating.
+  let trendDaysToZero: number;
   if (slope < 0 && fittedLast > 0) {
-    daysToZero = Math.min(Math.floor(fittedLast / -slope) + 1, PROJECTION_CAP_DAYS);
+    trendDaysToZero = Math.min(Math.floor(fittedLast / -slope) + 1, PROJECTION_CAP_DAYS);
   } else if (fittedLast <= 0) {
-    daysToZero = 0;
+    trendDaysToZero = 0;
   } else {
-    daysToZero = PROJECTION_CAP_DAYS;
+    trendDaysToZero = PROJECTION_CAP_DAYS;
   }
+  const trendZero = isoDate(addDays(lastDay, trendDaysToZero));
 
-  const projected = isoDate(addDays(lastDay, daysToZero));
+  // Primary "projected zero" = runway if income/credits stopped (matches PAST caption).
+  const lastBalance = balances[balances.length - 1] ?? 0;
+  let runwayDays: number;
+  if (lastBalance <= 0) runwayDays = 0;
+  else if (dailyAvg <= 0) runwayDays = PROJECTION_CAP_DAYS;
+  else runwayDays = Math.min(Math.floor(lastBalance / dailyAvg), PROJECTION_CAP_DAYS);
+  const projected = isoDate(addDays(lastDay, runwayDays));
+
   const intervalDays = slope < 0 && residualStd > 0 ? Math.round(residualStd / Math.abs(slope)) : 0;
-  const projectedLow = isoDate(addDays(lastDay, Math.max(0, daysToZero - intervalDays)));
-  const projectedHigh = isoDate(addDays(lastDay, Math.min(daysToZero + intervalDays, PROJECTION_CAP_DAYS)));
+  const projectedLow = isoDate(addDays(lastDay, Math.max(0, runwayDays - intervalDays)));
+  const projectedHigh = isoDate(addDays(lastDay, Math.min(runwayDays + intervalDays, PROJECTION_CAP_DAYS)));
 
   return {
     daily_avg: Math.round(dailyAvg * 100) / 100,
@@ -123,5 +132,7 @@ export function computeBurnRate(transactions: Transaction[]) {
     weekly_seasonal: weeklySeasonal,
     projected_zero_balance_date_low: projectedLow,
     projected_zero_balance_date_high: projectedHigh,
+    trend_zero_balance_date: trendZero,
+    runway_days_if_income_stopped: runwayDays,
   };
 }

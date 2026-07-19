@@ -95,16 +95,26 @@ def compute_burn_rate(transactions: list) -> dict:
         residual_std = math.sqrt(mse)
 
     if slope < 0 and fitted_last > 0:
-        days_to_zero = min(int(fitted_last / -slope) + 1, _PROJECTION_CAP_DAYS)
+        trend_days = min(int(fitted_last / -slope) + 1, _PROJECTION_CAP_DAYS)
     elif fitted_last <= 0:
-        days_to_zero = 0
+        trend_days = 0
     else:
-        days_to_zero = _PROJECTION_CAP_DAYS
+        trend_days = _PROJECTION_CAP_DAYS
+    trend_zero = last_day + timedelta(days=trend_days)
 
-    projected = last_day + timedelta(days=days_to_zero)
+    # Primary projected zero = runway if income/credits stopped (matches PAST UI caption).
+    last_balance = balances[-1] if balances else 0.0
+    if last_balance <= 0:
+        runway_days = 0
+    elif daily_avg <= 0:
+        runway_days = _PROJECTION_CAP_DAYS
+    else:
+        runway_days = min(int(last_balance / daily_avg), _PROJECTION_CAP_DAYS)
+    projected = last_day + timedelta(days=runway_days)
+
     interval_days = int(round(residual_std / abs(slope))) if slope < 0 and residual_std > 0 else 0
-    projected_low = last_day + timedelta(days=max(0, days_to_zero - interval_days))
-    projected_high = last_day + timedelta(days=min(days_to_zero + interval_days, _PROJECTION_CAP_DAYS))
+    projected_low = last_day + timedelta(days=max(0, runway_days - interval_days))
+    projected_high = last_day + timedelta(days=min(runway_days + interval_days, _PROJECTION_CAP_DAYS))
 
     return {
         "daily_avg": round(daily_avg, 2),
@@ -113,4 +123,6 @@ def compute_burn_rate(transactions: list) -> dict:
         "weekly_seasonal": weekly_seasonal,
         "projected_zero_balance_date_low": projected_low.isoformat(),
         "projected_zero_balance_date_high": projected_high.isoformat(),
+        "trend_zero_balance_date": trend_zero.isoformat(),
+        "runway_days_if_income_stopped": runway_days,
     }
