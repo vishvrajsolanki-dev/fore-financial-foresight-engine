@@ -65,7 +65,11 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.create({
     data: { email: email.toLowerCase(), passwordHash, provider: "email" },
   });
-  await ensureAccountExtras(user.id);
+  try {
+    await ensureAccountExtras(user.id);
+  } catch (e) {
+    console.error("[register] ensureAccountExtras failed (schema may be stale)", e);
+  }
 
   let sessionId: string;
   if (demoPersonaId) {
@@ -113,18 +117,26 @@ export async function POST(req: NextRequest) {
 
   const accessToken = await signAccessToken({ sub: user.id, sid: sessionId });
 
-  const verifyRaw = await issueAuthToken(user.id, "email_verify");
-  const verifyLink = `${appBaseUrl()}/verify-email?token=${encodeURIComponent(verifyRaw)}`;
-  const mail = await sendEmail({
-    to: user.email,
-    subject: "Verify your FORE email",
-    text: `Verify your email (expires in 24 hours):\n\n${verifyLink}\n`,
-  });
+  let verifyExtras: Record<string, string> = {};
+  try {
+    const verifyRaw = await issueAuthToken(user.id, "email_verify");
+    const verifyLink = `${appBaseUrl()}/verify-email?token=${encodeURIComponent(verifyRaw)}`;
+    const mail = await sendEmail({
+      to: user.email,
+      subject: "Verify your FORE email",
+      text: `Verify your email (expires in 24 hours):\n\n${verifyLink}\n`,
+    });
+    if (mail.preview) {
+      verifyExtras = { devVerifyToken: verifyRaw, devVerifyLink: verifyLink };
+    }
+  } catch (e) {
+    console.error("[register] email verification token skipped", e);
+  }
 
   const res = NextResponse.json({
     user: { id: user.id, email: user.email, name: null, emailVerifiedAt: null },
     sessionId,
-    ...(mail.preview ? { devVerifyToken: verifyRaw, devVerifyLink: verifyLink } : {}),
+    ...verifyExtras,
   });
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));
   res.cookies.set(COOKIE_REFRESH, refreshRaw, cookieOptions(7 * 24 * 60 * 60));

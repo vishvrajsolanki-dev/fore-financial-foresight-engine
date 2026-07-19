@@ -42,11 +42,21 @@ export async function GET() {
     return NextResponse.json({ authenticated: false, database: true });
   }
 
-  await ensureAccountExtras(auth.sub);
-  const [preferences, subscription] = await Promise.all([
-    prisma.userPreferences.findUnique({ where: { userId: auth.sub } }),
-    prisma.subscription.findUnique({ where: { userId: auth.sub } }),
-  ]);
+  try {
+    await ensureAccountExtras(auth.sub);
+  } catch (e) {
+    console.error("[me] ensureAccountExtras failed", e);
+  }
+  let preferences = null;
+  let subscription = null;
+  try {
+    [preferences, subscription] = await Promise.all([
+      prisma.userPreferences.findUnique({ where: { userId: auth.sub } }),
+      prisma.subscription.findUnique({ where: { userId: auth.sub } }),
+    ]);
+  } catch (e) {
+    console.error("[me] preferences/subscription unavailable", e);
+  }
 
   // Skip description decrypt on hydrate — charts/ML don't need narrations.
   const ctx = await sessionToContext(auth.sid, {

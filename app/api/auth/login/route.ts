@@ -82,7 +82,11 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  await ensureAccountExtras(user.id);
+  try {
+    await ensureAccountExtras(user.id);
+  } catch (e) {
+    console.error("[login] ensureAccountExtras failed (schema may be stale)", e);
+  }
 
   const refreshRaw = generateRefreshTokenRaw();
   await prisma.refreshToken.create({
