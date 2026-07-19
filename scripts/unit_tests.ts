@@ -19,6 +19,25 @@ async function main() {
   if (parsed.transactions.length < 2) throw new Error("CSV parser failed");
   if (parsed.detectedFormat !== "indian_bank_debit_credit") throw new Error("format detect");
 
+  // Kotak-style: preamble + Amount + Dr/Cr + timestamped dates
+  const kotak = `"Account Statement"
+"","","","","Cust. Reln. No.","123"
+"Sl. No.","Transaction Date","Value Date","Description","Chq /Ref No.","Amount","Dr / Cr","Balance","Dr / Cr"
+"1","20-07-2025 02:12:01","20-07-2025","UPI/Swiggy Limited/520478628930/UPI","UPI-1","419.00","DR","10000","CR"
+"2","20-07-2025 03:00:00","20-07-2025","UPI/Vandan Dalwadi/556728625598/UPI","UPI-2","200.00","DR","9800","CR"
+"3","21-07-2025 10:00:00","21-07-2025","MB:RECEIVED FROM SOLANKI YASHPALSINH","MB-1","15000.00","CR","24800","CR"
+"Closing Balance","as on 21/07/2025 INR 24800"
+`;
+  const k = parseBankCsv(kotak);
+  if (k.detectedFormat !== "kotak_amount_drcr") throw new Error("kotak format");
+  if (k.rowCount !== 3) throw new Error(`kotak rows ${k.rowCount}`);
+  if (k.transactions[0].category !== "food") throw new Error("swiggy→food");
+  if (k.transactions[1].category !== "transfers") throw new Error("p2p→transfers");
+  if (k.transactions[2].category !== "income" && k.transactions[2].category !== "transfers") {
+    throw new Error("mb credit category");
+  }
+  if (!k.transactions[0].merchant?.includes("Swiggy")) throw new Error("merchant extract");
+
   const plain = "HDFC UPI payment ref 12345";
   if (decryptField(encryptField(plain)) !== plain) throw new Error("encryption");
 

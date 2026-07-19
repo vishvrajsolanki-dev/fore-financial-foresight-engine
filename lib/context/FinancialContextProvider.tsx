@@ -39,6 +39,7 @@ export interface CsvUploadMeta {
   skippedRows: number;
   detectedFormat: string;
   warnings: string[];
+  duplicatesRemoved?: number;
 }
 
 interface FinancialContextValue {
@@ -271,6 +272,7 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
             skippedRows: parsed.skippedRows,
             detectedFormat: parsed.detectedFormat,
             warnings: parsed.warnings,
+            duplicatesRemoved: parsed.duplicatesRemoved,
           };
         } catch (err) {
           setPastError(err instanceof Error ? err.message : "CSV analysis failed");

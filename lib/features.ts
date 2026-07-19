@@ -10,6 +10,6 @@ export const features = {
   voiceNarration: true,
   exaGrounding: true,
   exportAhead: true,
-  transportBenchmark: true,
+  transportBenchmark: false, // invented transport row removed — only show if real transport spend exists
   personaCompare: true,
 } as const;

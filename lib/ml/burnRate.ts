@@ -10,6 +10,8 @@ function parseDate(value: string): Date {
 function signedAmount(txn: Transaction): number {
   const amount = Number(txn.amount);
   const category = String(txn.category ?? "").trim().toLowerCase();
+  // P2P transfers carry a real signed amount (in or out) — trust the sign.
+  if (category === "transfers") return amount;
   if (CREDIT_CATEGORIES.has(category)) return Math.abs(amount);
   return -Math.abs(amount);
 }

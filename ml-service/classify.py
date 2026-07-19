@@ -58,7 +58,15 @@ _CATEGORY_MAP = {
 }
 
 # Credits (money in) are excluded from spend buckets — see burn_rate.py for the same convention.
-_CREDIT_CATEGORIES = {"income", "salary", "credit", "refund", "cashback", "opening_balance"}
+_CREDIT_CATEGORIES = {
+    "income",
+    "salary",
+    "credit",
+    "refund",
+    "cashback",
+    "opening_balance",
+    "transfers",  # P2P UPI — exclude from spend archetype ratios
+}
 
 _AVG_DAYS_PER_MONTH = 30.44
 

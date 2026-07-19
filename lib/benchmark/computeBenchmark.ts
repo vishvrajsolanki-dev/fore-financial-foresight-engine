@@ -24,7 +24,16 @@ interface BenchRow {
   categories: BenchCategory[];
 }
 
-const BENCH_MONTHS = 3;
+const AVG_DAYS_PER_MONTH = 30.44;
+
+function monthsInWindow(transactions: Transaction[]): number {
+  if (transactions.length < 2) return 1;
+  const dates = transactions.map((t) => t.date).sort();
+  const min = new Date(dates[0] + "T00:00:00Z").getTime();
+  const max = new Date(dates[dates.length - 1] + "T00:00:00Z").getTime();
+  const days = Math.floor((max - min) / 86400000) + 1;
+  return Math.max(days / AVG_DAYS_PER_MONTH, 1);
+}
 
 export function estimatePercentile(value: number, p: Percentiles): number {
   const points: [number, number][] = [
@@ -48,10 +57,11 @@ export function estimatePercentile(value: number, p: Percentiles): number {
 
 function monthlySpendByCategory(transactions: Transaction[]): Record<string, number> {
   const totals: Record<string, number> = {};
+  const months = monthsInWindow(transactions);
   for (const t of transactions) {
     if (t.amount < 0) totals[t.category] = (totals[t.category] || 0) + Math.abs(t.amount);
   }
-  for (const k of Object.keys(totals)) totals[k] = totals[k] / BENCH_MONTHS;
+  for (const k of Object.keys(totals)) totals[k] = totals[k] / months;
   return totals;
 }
 
@@ -79,23 +89,9 @@ export function computeBenchmark(
     percentile: estimatePercentile(userMonthly[c.category] || 0, c.percentiles),
   }));
 
-  if (features.transportBenchmark && !rows.some((r) => r.category === "transport")) {
-    const billsBench = row.categories.find((c) => c.category === "bills");
-    if (billsBench) {
-      const transportValue = (userMonthly.bills || 0) * 0.22;
-      const transportPercentiles: Percentiles = {
-        p25: Math.round(billsBench.percentiles.p25 * 0.15),
-        p50: Math.round(billsBench.percentiles.p50 * 0.18),
-        p75: Math.round(billsBench.percentiles.p75 * 0.22),
-        p90: Math.round(billsBench.percentiles.p90 * 0.25),
-      };
-      rows.push({
-        category: "transport",
-        user_value: Math.round(transportValue),
-        percentile: estimatePercentile(transportValue, transportPercentiles),
-      });
-    }
-  }
+  // Transport row is only shown when the statement actually has transport-labelled spend.
+  // (Previously invented as 22% of bills — removed as misleading.)
+  void features.transportBenchmark;
 
   return rows;
 }

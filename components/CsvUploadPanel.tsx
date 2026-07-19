@@ -56,7 +56,7 @@ export default function CsvUploadPanel() {
       <p className="muted text-sm">{demoMode ? "Bring your statement" : "Real bank data"}</p>
       <p className="mt-1 font-semibold">Upload your bank statement CSV</p>
       <p className="muted mt-1 text-sm">
-        Supports HDFC, ICICI, SBI-style exports (Date, Narration, Debit/Credit columns).{" "}
+        Supports HDFC, ICICI, SBI, and Kotak exports (including Amount + Dr/Cr statements).{" "}
         {demoMode
           ? "Parsed in your browser — transactions are sent only to the analysis service, never stored."
           : "Raw CSV is never stored — only normalized transactions with encrypted descriptions."}

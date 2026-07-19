@@ -6,6 +6,7 @@ export interface CsvParseResult {
   skippedRows: number;
   detectedFormat: string;
   warnings: string[];
+  duplicatesRemoved: number;
 }
 
 type ColumnMap = {
@@ -14,9 +15,18 @@ type ColumnMap = {
   debit?: number;
   credit?: number;
   amount?: number;
+  drCr?: number;
+  balance?: number;
+  ref?: number;
 };
 
-const DATE_ALIASES = ["date", "transaction date", "txn date", "value date", "posting date"];
+const DATE_ALIASES = [
+  "transaction date",
+  "txn date",
+  "value date",
+  "posting date",
+  "date",
+];
 const DESC_ALIASES = [
   "description",
   "narration",
@@ -25,26 +35,57 @@ const DESC_ALIASES = [
   "remarks",
   "details",
 ];
-const DEBIT_ALIASES = ["debit", "debit amount", "withdrawal", "withdrawal amount", "dr"];
-const CREDIT_ALIASES = ["credit", "credit amount", "deposit", "deposit amount", "cr"];
-const AMOUNT_ALIASES = ["amount", "transaction amount"];
+const DEBIT_ALIASES = ["debit amount", "withdrawal amount", "debit", "withdrawal", "dr"];
+const CREDIT_ALIASES = ["credit amount", "deposit amount", "credit", "deposit", "cr"];
+const AMOUNT_ALIASES = ["transaction amount", "amount"];
+const DRCR_ALIASES = ["dr / cr", "dr/cr", "type", "txn type", "transaction type", "debit/credit"];
+const BALANCE_ALIASES = ["balance", "closing balance", "running balance"];
+const REF_ALIASES = ["chq / ref no", "chq/ref no", "ref no", "reference", "cheque no", "chq no"];
 
 const CATEGORY_KEYWORDS: Record<string, RegExp[]> = {
-  food: [/swiggy|zomato|restaurant|cafe|food|grocery|dmart|bigbasket|dominos|mcdonald/i],
-  shopping: [/amazon|flipkart|myntra|shopping|mall|zara|decathlon|electronics/i],
-  bills: [/electricity|water bill|rent|broadband|recharge|mobile|gas|emi|insurance/i],
-  entertainment: [/netflix|spotify|bookmyshow|movie|pub|concert|gaming|hotstar/i],
-  savings: [/sip|mutual fund|rd deposit|fixed deposit|savings|nps/i],
+  food: [
+    /swiggy|zomato|restaurant|cafe|food|grocery|dmart|bigbasket|dominos|mcdonald|zepto|blinkit|instamart|eatsure|faasos|box8|behrouz|pizza|burger|starbucks|ccd|chai|milk|dairy|egg green|mahi milk|rocksoul cafe/i,
+  ],
+  shopping: [
+    /amazon|flipkart|myntra|shopping|mall|zara|decathlon|electronics|meesho|ajio|nykaa|tata cliq|croma|reliance digital/i,
+  ],
+  bills: [
+    /electricity|water bill|rent|broadband|recharge|mobile|gas|emi|insurance|airtel|jio|vi |vodafone|bsnl|amb non maintenance|non maintenance chrg|charge|chrg:|billdesk|bharat bill|bbps|fastag|petrol|fuel|indian oil|hpcl|bpcl|shell|jay somnath pet/i,
+  ],
+  entertainment: [
+    /netflix|spotify|bookmyshow|movie|pub|concert|gaming|hotstar|prime video|disney|youtube|sony liv|zee5/i,
+  ],
+  savings: [/sip|mutual fund|rd deposit|fixed deposit|\bsavings\b|nps|groww|zerodha|upstox|kuvera/i],
 };
+
+const FOOTER_MARKERS = [
+  /^closing balance/i,
+  /^important note/i,
+  /^the transaction date refers/i,
+  /^you may call/i,
+  /^write to us/i,
+  /^csv statement/i,
+  /^the number of transactions/i,
+];
 
 function normalizeHeader(h: string): string {
   return h.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function findColumn(headers: string[], aliases: string[]): number | undefined {
-  for (let i = 0; i < headers.length; i++) {
-    const h = normalizeHeader(headers[i]);
-    if (aliases.some((a) => h === a || h.includes(a))) return i;
+  // Prefer exact alias matches before substring matches to avoid
+  // "Dr / Cr" winning over a real "Debit" column, etc.
+  for (const alias of aliases) {
+    for (let i = 0; i < headers.length; i++) {
+      if (normalizeHeader(headers[i]) === alias) return i;
+    }
+  }
+  for (const alias of aliases) {
+    for (let i = 0; i < headers.length; i++) {
+      const h = normalizeHeader(headers[i]);
+      if (h.includes(alias) && !(alias === "dr" && h.includes("dr /"))) return i;
+      if (h.includes(alias) && !(alias === "cr" && h.includes("/ cr"))) return i;
+    }
   }
   return undefined;
 }
@@ -56,6 +97,9 @@ function mapColumns(headers: string[]): ColumnMap {
     debit: findColumn(headers, DEBIT_ALIASES),
     credit: findColumn(headers, CREDIT_ALIASES),
     amount: findColumn(headers, AMOUNT_ALIASES),
+    drCr: findColumn(headers, DRCR_ALIASES),
+    balance: findColumn(headers, BALANCE_ALIASES),
+    ref: findColumn(headers, REF_ALIASES),
   };
 }
 
@@ -90,7 +134,9 @@ function parseAmount(raw: string): number | null {
 
 function normalizeDate(raw: string): string | null {
   if (!raw?.trim()) return null;
-  const s = raw.trim();
+  // Strip trailing time ("20-07-2025 02:12:01" → "20-07-2025")
+  const s = raw.trim().split(/\s+/)[0];
+
   // DD/MM/YYYY or DD-MM-YYYY
   let m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (m) {
@@ -116,20 +162,98 @@ function normalizeDate(raw: string): string | null {
   return null;
 }
 
+function isDrCrDebit(raw: string): boolean | null {
+  const v = raw.trim().toUpperCase();
+  if (!v) return null;
+  if (v === "DR" || v === "DEBIT" || v.startsWith("DR")) return true;
+  if (v === "CR" || v === "CREDIT" || v.startsWith("CR")) return false;
+  return null;
+}
+
+function looksLikePersonName(name: string): boolean {
+  const n = name.trim();
+  if (!n || n.length < 3) return false;
+  // Known brand / corporate tokens → not a person
+  if (
+    /limited|ltd|pvt|private|market|mart|cafe|restaurant|petrol|fuel|bank|airtel|jio|swiggy|zomato|amazon|flipkart|zepto|blinkit|upi|payment|charge|chrg/i.test(
+      n
+    )
+  ) {
+    return false;
+  }
+  // Two+ alphabetic tokens is the common UPI P2P pattern ("Vandan Dalwadi")
+  const parts = n.split(/\s+/).filter((p) => /[a-zA-Z]{2,}/.test(p));
+  return parts.length >= 2;
+}
+
 export function categorizeDescription(description: string): string {
   for (const [cat, patterns] of Object.entries(CATEGORY_KEYWORDS)) {
     if (patterns.some((p) => p.test(description))) return cat;
   }
+  // Person-to-person UPI / mobile-banking transfers are not "shopping".
+  const upiName = description.match(/^UPI\/([^/]+)/i)?.[1] ?? "";
+  if (upiName && looksLikePersonName(upiName)) return "transfers";
+  if (/^MB:\s*(SENT TO|RECEIVED FROM)/i.test(description)) return "transfers";
   return "shopping";
 }
 
+/** Extract a readable merchant token from Indian bank / UPI narrations. */
+export function extractMerchant(description: string): string | undefined {
+  if (!description?.trim()) return undefined;
+  const d = description.trim();
+
+  // UPI/MERCHANT NAME/...  or UPI-...
+  const upi = d.match(/^UPI\/([^/]+)/i);
+  if (upi) {
+    return upi[1]
+      .replace(/\s+/g, " ")
+      .replace(/[^a-zA-Z0-9 .&'-]/g, "")
+      .trim()
+      .slice(0, 48) || undefined;
+  }
+
+  // MB: SENT TO / RECEIVED FROM NAME
+  const mb = d.match(/^MB:\s*(?:SENT TO|RECEIVED FROM)\s+(.+)$/i);
+  if (mb) return mb[1].trim().slice(0, 48);
+
+  // CHRG: ...
+  const chrg = d.match(/^CHRG:\s*(.+)$/i);
+  if (chrg) return chrg[1].trim().slice(0, 48);
+
+  // Fallback: first meaningful token run
+  const cleaned = d.replace(/[^a-zA-Z0-9 /&.-]/g, " ").replace(/\s+/g, " ").trim();
+  return cleaned.slice(0, 48) || undefined;
+}
+
 function detectFormat(cols: ColumnMap): string {
+  if (cols.amount != null && cols.drCr != null) return "kotak_amount_drcr";
   if (cols.debit != null && cols.credit != null) return "indian_bank_debit_credit";
   if (cols.amount != null) return "single_amount_column";
   return "generic";
 }
 
-/** Parse real-world bank CSV exports (HDFC, ICICI, SBI-style column names). */
+function looksLikeHeader(cells: string[]): boolean {
+  const joined = cells.map(normalizeHeader).join("|");
+  const hasDate = DATE_ALIASES.some((a) => joined.includes(a));
+  const hasDesc = DESC_ALIASES.some((a) => joined.includes(a));
+  const hasAmt =
+    AMOUNT_ALIASES.some((a) => joined.includes(a)) ||
+    DEBIT_ALIASES.some((a) => joined.includes(a)) ||
+    CREDIT_ALIASES.some((a) => joined.includes(a));
+  return hasDate && (hasDesc || hasAmt);
+}
+
+function isFooterRow(cells: string[]): boolean {
+  const first = (cells[0] ?? "").trim();
+  if (!first) return false;
+  return FOOTER_MARKERS.some((re) => re.test(first));
+}
+
+function dedupeKey(t: Transaction, ref?: string): string {
+  return [t.date, t.amount.toFixed(2), (t.description ?? "").toLowerCase(), ref ?? ""].join("|");
+}
+
+/** Parse real-world bank CSV exports (HDFC, ICICI, SBI, Kotak-style). */
 export function parseBankCsv(text: string): CsvParseResult {
   const warnings: string[] = [];
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
@@ -137,7 +261,26 @@ export function parseBankCsv(text: string): CsvParseResult {
     throw new Error("CSV must have a header row and at least one transaction");
   }
 
-  const headers = parseCsvLine(lines[0]);
+  // Skip bank statement preamble (account holder block) to find the real header.
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(lines.length, 40); i++) {
+    const cells = parseCsvLine(lines[i]);
+    if (looksLikeHeader(cells)) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx < 0) {
+    throw new Error(
+      "Could not find a transaction header row (expected Date / Description / Amount columns). " +
+        "Supported: HDFC, ICICI, SBI, Kotak exports."
+    );
+  }
+  if (headerIdx > 0) {
+    warnings.push(`Skipped ${headerIdx} preamble row(s) before the transaction table.`);
+  }
+
+  const headers = parseCsvLine(lines[headerIdx]);
   const cols = mapColumns(headers);
   if (cols.date == null) {
     throw new Error("Could not find a date column (expected Date, Value Date, Transaction Date, etc.)");
@@ -149,10 +292,13 @@ export function parseBankCsv(text: string): CsvParseResult {
   const detectedFormat = detectFormat(cols);
   const transactions: Transaction[] = [];
   let skippedRows = 0;
+  const seen = new Set<string>();
+  let duplicatesRemoved = 0;
 
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = headerIdx + 1; i < lines.length; i++) {
     const cells = parseCsvLine(lines[i]);
     if (cells.every((c) => !c.trim())) continue;
+    if (isFooterRow(cells)) break;
 
     const dateRaw = cells[cols.date] ?? "";
     const iso = normalizeDate(dateRaw);
@@ -164,7 +310,16 @@ export function parseBankCsv(text: string): CsvParseResult {
     const description = cols.description != null ? (cells[cols.description] ?? "").trim() : "";
     let amount: number | null = null;
 
-    if (cols.debit != null || cols.credit != null) {
+    if (cols.amount != null && cols.drCr != null) {
+      // Kotak-style: single Amount + Dr/Cr indicator
+      const raw = parseAmount(cells[cols.amount] ?? "");
+      const isDebit = isDrCrDebit(cells[cols.drCr] ?? "");
+      if (raw != null && isDebit != null) {
+        amount = isDebit ? -Math.abs(raw) : Math.abs(raw);
+      } else if (raw != null) {
+        amount = raw;
+      }
+    } else if (cols.debit != null || cols.credit != null) {
       const debit = cols.debit != null ? parseAmount(cells[cols.debit] ?? "") : null;
       const credit = cols.credit != null ? parseAmount(cells[cols.credit] ?? "") : null;
       if (credit != null && credit > 0) amount = credit;
@@ -179,25 +334,52 @@ export function parseBankCsv(text: string): CsvParseResult {
       continue;
     }
 
-    const category =
-      amount > 0 && /salary|income|credit|transfer from/i.test(description)
-        ? "income"
-        : amount > 0
-          ? "income"
-          : categorizeDescription(description);
+    // Credits: keep P2P receipts as transfers (not "income"/salary),
+    // so archetype income ratios aren't inflated by friend reimbursements.
+    let category: string;
+    if (amount > 0) {
+      const descCat = categorizeDescription(description);
+      category = descCat === "transfers" ? "transfers" : "income";
+      if (
+        category === "income" &&
+        !/salary|payroll|neft|imps|interest|refund|cashback/i.test(description) &&
+        /^UPI\//i.test(description)
+      ) {
+        const upiName = description.match(/^UPI\/([^/]+)/i)?.[1] ?? "";
+        if (upiName && looksLikePersonName(upiName)) category = "transfers";
+      }
+    } else {
+      category = categorizeDescription(description);
+    }
 
-    transactions.push({
+    const merchant = extractMerchant(description);
+    const ref = cols.ref != null ? (cells[cols.ref] ?? "").trim() : "";
+
+    const txn: Transaction = {
       date: iso,
       category,
       amount,
       description: description || undefined,
-    });
+      ...(merchant ? { merchant } : {}),
+    };
+
+    const key = dedupeKey(txn, ref);
+    if (seen.has(key)) {
+      duplicatesRemoved++;
+      continue;
+    }
+    seen.add(key);
+
+    transactions.push(txn);
   }
 
   transactions.sort((a, b) => a.date.localeCompare(b.date));
 
   if (transactions.length < 10) {
     warnings.push("Fewer than 10 transactions parsed — check column mapping or date format.");
+  }
+  if (duplicatesRemoved > 0) {
+    warnings.push(`Removed ${duplicatesRemoved} duplicate row(s).`);
   }
 
   return {
@@ -206,6 +388,7 @@ export function parseBankCsv(text: string): CsvParseResult {
     skippedRows,
     detectedFormat,
     warnings,
+    duplicatesRemoved,
   };
 }
 
