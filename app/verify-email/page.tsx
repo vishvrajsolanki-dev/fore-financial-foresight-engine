@@ -38,8 +38,8 @@ function VerifyInner() {
     <AuthShell
       title="Email verification"
       footer={
-        <Link href="/home" style={{ color: "var(--accent)" }}>
-          Go to Home
+        <Link href="/past" style={{ color: "var(--accent)" }}>
+          Go to Past
         </Link>
       }
     >
