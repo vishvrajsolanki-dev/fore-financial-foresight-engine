@@ -332,10 +332,95 @@ a {
     @apply flex flex-col justify-center gap-5 px-5 sm:px-10 py-16;
   }
   .mkt-hero-visual {
-    min-height: 280px;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
     background:
       radial-gradient(600px 400px at 70% 30%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 60%),
       linear-gradient(145deg, #0a2540 0%, #12365a 45%, #0f766e 100%);
+  }
+  .mkt-hero-product {
+    width: min(420px, 100%);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.96);
+    color: #0a2540;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+  .mkt-hero-product-chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 0.85rem;
+    background: #f6f9fc;
+    border-bottom: 1px solid #e6ebf1;
+    font-size: 0.7rem;
+    color: #425466;
+  }
+  .mkt-hero-product-chrome span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d0d7e2;
+  }
+  .mkt-hero-product-chrome span:first-child {
+    background: #f87171;
+  }
+  .mkt-hero-product-chrome span:nth-child(2) {
+    background: #fbbf24;
+  }
+  .mkt-hero-product-chrome span:nth-child(3) {
+    background: #34d399;
+  }
+  .mkt-hero-product-chrome strong {
+    margin-left: 0.5rem;
+    color: #0a2540;
+  }
+  .mkt-hero-product-body {
+    padding: 1rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .mkt-hero-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .mkt-hero-kpi small {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #425466;
+    font-weight: 600;
+  }
+  .mkt-hero-kpi b {
+    font-size: 1.05rem;
+  }
+  .mkt-hero-chart {
+    background: #f6f9fc;
+    border-radius: 10px;
+    padding: 0.5rem;
+  }
+  .mkt-hero-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.78rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+  }
+  .mkt-hero-row em {
+    font-style: normal;
+    color: #425466;
+  }
+  .mkt-hero-row strong {
+    color: #0f766e;
   }
 
   /* Auth A3 — right upper form */

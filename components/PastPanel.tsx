@@ -144,7 +144,7 @@ export default function PastPanel() {
       <FaceIntro
         face="PAST"
         title="Your spending, decoded"
-        blurb="Archetype assigned from spending patterns — runway from real burn math."
+        blurb="Your spending profile and runway — from the statement you connected."
       />
 
       {/* Hero: runway / zero date leads */}
@@ -170,7 +170,7 @@ export default function PastPanel() {
           <p className="muted text-sm">Assigned spending archetype</p>
           <div className="mt-2 flex flex-wrap items-baseline gap-3">
             <h2 className="display text-3xl">{archetype.label}</h2>
-            <span className="pill">Euclidean nearest of 5</span>
+            <span className="pill">Assigned from spend mix</span>
           </div>
           <p className="mt-3 text-sm leading-relaxed">{copy.blurb}</p>
           <p className="muted mt-2 text-sm">
@@ -186,7 +186,7 @@ export default function PastPanel() {
           role="img"
           aria-label={`Archetype closeness radar. Nearest: ${archetype.label}.`}
         >
-          <p className="muted text-sm mb-2">Closeness to each centroid</p>
+          <p className="muted text-sm mb-2">How close you are to each profile</p>
           <div className="h-56 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} outerRadius="70%">

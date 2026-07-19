@@ -6,7 +6,6 @@ import {
   CalendarRange,
   MessageSquareText,
   TrendingUp,
-  Home,
   Lightbulb,
   FileBarChart,
   Settings,
@@ -16,8 +15,8 @@ import AuthNav from "@/components/AuthNav";
 import FeatureToolbar from "@/components/FeatureToolbar";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
+/** Nav 2 — three faces primary; Insights/Reports secondary (N-a). */
 const PRIMARY = [
-  { href: "/home", label: "Home", hint: "Pulse", icon: Home },
   { href: "/past", label: "Past", hint: "Who you are", icon: CalendarRange },
   { href: "/decide", label: "Decide", hint: "Can I afford it?", icon: MessageSquareText },
   { href: "/ahead", label: "Ahead", hint: "Goals & peers", icon: TrendingUp },
@@ -32,12 +31,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { activeId, ctx, fullStackEnabled, authUser, currency, setCurrency } = useFinancialContext();
   const assigned = ctx?.archetype?.label;
-  const needsData = !activeId && !pathname.startsWith("/past") && !pathname.startsWith("/onboarding") && pathname !== "/home";
+  const needsData =
+    !activeId &&
+    !pathname.startsWith("/past") &&
+    !pathname.startsWith("/onboarding");
 
   return (
     <div className="app-shell">
       <aside className="app-sidebar" aria-label="Primary">
-        <Link href="/home" className="fore-brand text-2xl px-2">
+        <Link href={activeId ? "/past" : "/onboarding"} className="fore-brand text-2xl px-2">
           F<span style={{ color: "var(--accent)" }}>O</span>RE
         </Link>
         <p className="muted text-xs px-2 leading-relaxed">Financial foresight engine</p>
@@ -93,15 +95,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="app-content">
         <header className="app-contextbar">
-          <Link href="/home" className="fore-brand text-xl sm:hidden">
+          <Link href="/past" className="fore-brand text-xl sm:hidden">
             F<span style={{ color: "var(--accent)" }}>O</span>RE
           </Link>
           <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-            <span className="muted text-xs font-semibold uppercase tracking-wide">Assigned</span>
             {assigned ? (
               <span className="pill pill-success">{assigned}</span>
             ) : (
-              <span className="muted text-sm">Upload or try demo data</span>
+              <span className="muted text-sm">Upload a statement or try demo data to begin</span>
             )}
           </div>
           <FeatureToolbar currency={currency} onCurrencyChange={setCurrency} />
@@ -132,8 +133,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <footer className="app-footer">
           {assigned ? `${assigned} · ` : ""}
-          {!authUser && fullStackEnabled ? "Signed out · " : ""}
-          FORE · Light sidebar · Evening available in Settings
+          {fullStackEnabled && authUser ? `${authUser.email} · ` : ""}
+          FORE
         </footer>
       </div>
 
