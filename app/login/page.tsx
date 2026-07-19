@@ -1,17 +1,14 @@
 "use client";
 
 // FORE — app/login/page.tsx
-// Warm Ledger auth screen: provider buttons + email/password on the left, product
-// story on the right. Full-stack mode (DATABASE_URL set) uses the real JWT login;
-// demo mode falls through to /past with the persona picker, matching the brief's
-// "single hardcoded demo session" stance. Provider buttons are demo-only stubs —
-// they exist for the stage flow, they do not perform a real OAuth round-trip.
+// Warm Ledger auth screen: real Google/Microsoft OAuth (when configured) + email/password.
+// Without DATABASE_URL, "Explore demo" uses client-side personas — no fake OAuth.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
-type Provider = "Google" | "Microsoft" | "GitHub";
+type Provider = "google" | "microsoft";
 
 function GoogleIcon() {
   return (
@@ -31,17 +28,6 @@ function MicrosoftIcon() {
       <rect x="12.5" y="1" width="10.5" height="10.5" fill="#7FBA00" />
       <rect x="1" y="12.5" width="10.5" height="10.5" fill="#00A4EF" />
       <rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900" />
-    </svg>
-  );
-}
-
-function GitHubIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="#24292f" aria-hidden>
-      <path
-        fillRule="evenodd"
-        d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
-      />
     </svg>
   );
 }
@@ -81,6 +67,16 @@ const FEATURES = [
   },
 ];
 
+const OAUTH_ERRORS: Record<string, string> = {
+  google_not_configured: "Google sign-in is not configured on this deployment.",
+  microsoft_not_configured: "Microsoft sign-in is not configured on this deployment.",
+  google_oauth_failed: "Google sign-in failed. Try again or use email.",
+  microsoft_oauth_failed: "Microsoft sign-in failed. Try again or use email.",
+  oauth_state: "Sign-in session expired. Please try again.",
+  email_unverified: "Your email is not verified with the provider.",
+  no_database: "Full-stack auth needs DATABASE_URL. Use Explore demo instead.",
+};
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -90,57 +86,31 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [providerLoading, setProviderLoading] = useState<Provider | null>(null);
+  const [providers, setProviders] = useState({ google: false, microsoft: false, database: false });
 
   const busy = loading || providerLoading !== null;
 
-  // Demo-only stub: no real OAuth. Best-effort guest JWT when DB is available,
-  // but always advance to the faces — they work in client-side demo mode without auth.
-  async function providerSignIn(provider: Provider) {
+  useEffect(() => {
+    const err = params.get("error");
+    if (err && OAUTH_ERRORS[err]) setError(OAUTH_ERRORS[err]);
+    void fetch("/api/auth/providers")
+      .then((r) => r.json())
+      .then((d) =>
+        setProviders({
+          google: !!d.google,
+          microsoft: !!d.microsoft,
+          database: !!d.database,
+        })
+      )
+      .catch(() => undefined);
+  }, [params]);
+
+  function providerSignIn(provider: Provider) {
     if (busy) return;
     setError(null);
     setProviderLoading(provider);
-
-    const demoEmail = `demo-${provider.toLowerCase()}@fore.app`;
-    const demoPassword = "fore-demo-guest-not-for-production";
-
-    try {
-      let res = await fetch("/api/auth/demo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider }),
-        credentials: "include",
-      });
-
-      if (!res.ok && res.status !== 503) {
-        res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: demoEmail, password: demoPassword }),
-          credentials: "include",
-        });
-        if (res.status === 401) {
-          res = await fetch("/api/auth/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: demoEmail,
-              password: demoPassword,
-              demoPersonaId: "persona-priya",
-            }),
-            credentials: "include",
-          });
-        }
-      }
-
-      if (res.ok) {
-        window.location.assign(next);
-        return;
-      }
-    } catch {
-      // Non-fatal — face routes do not require server auth.
-    }
-
-    window.location.assign(next);
+    const q = new URLSearchParams({ next });
+    window.location.assign(`/api/auth/oauth/${provider}/start?${q.toString()}`);
   }
 
   async function onSubmit(e: FormEvent) {
@@ -183,29 +153,30 @@ function LoginForm() {
             <button
               type="button"
               className="btn-provider"
-              disabled={busy}
-              onClick={() => providerSignIn("Google")}
+              disabled={busy || !providers.google}
+              title={providers.google ? undefined : "Configure GOOGLE_CLIENT_ID/SECRET"}
+              onClick={() => providerSignIn("google")}
             >
-              {providerLoading === "Google" ? <span className="spinner" style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }} /> : <GoogleIcon />}
+              {providerLoading === "google" ? <span className="spinner" style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }} /> : <GoogleIcon />}
               Continue with Google
             </button>
             <button
               type="button"
               className="btn-provider"
-              disabled={busy}
-              onClick={() => providerSignIn("Microsoft")}
+              disabled={busy || !providers.microsoft}
+              title={providers.microsoft ? undefined : "Configure MS_CLIENT_ID/SECRET"}
+              onClick={() => providerSignIn("microsoft")}
             >
-              {providerLoading === "Microsoft" ? <span className="spinner" style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }} /> : <MicrosoftIcon />}
+              {providerLoading === "microsoft" ? <span className="spinner" style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }} /> : <MicrosoftIcon />}
               Continue with Microsoft
             </button>
             <button
               type="button"
               className="btn-provider"
               disabled={busy}
-              onClick={() => providerSignIn("GitHub")}
+              onClick={() => router.push("/past")}
             >
-              {providerLoading === "GitHub" ? <span className="spinner" style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }} /> : <GitHubIcon />}
-              Continue with GitHub
+              Explore with demo data
             </button>
           </div>
 

@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit({ key: clientKey(req, "ml-classify"), limit: 60, windowMs: 60_000 });
+  const limited = await rateLimit({ key: clientKey(req, "ml-classify"), limit: 60, windowMs: 60_000 });
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many requests" },

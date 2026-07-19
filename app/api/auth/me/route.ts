@@ -34,7 +34,11 @@ export async function GET() {
     return NextResponse.json({ authenticated: false, database: true });
   }
 
-  const ctx = await sessionToContext(auth.sid, auth.sub);
+  // Skip description decrypt on hydrate — charts/ML don't need narrations.
+  const ctx = await sessionToContext(auth.sid, {
+    userId: auth.sub,
+    decryptDescriptions: false,
+  });
 
   return NextResponse.json({
     authenticated: true,

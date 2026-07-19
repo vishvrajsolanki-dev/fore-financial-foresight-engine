@@ -11,15 +11,19 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  passwordHash       String?  @map("password_hash")
+  provider           String   @default("email") // email | google | microsoft
+  providerAccountId  String?  @map("provider_account_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   refreshTokens RefreshToken[]
   sessions      FinancialSession[]
+  conversations Conversation[]
 
+  @@unique([provider, providerAccountId])
   @@map("users")
 }
 
@@ -56,7 +60,8 @@ model FinancialSession {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  transactions Transaction[]
+  transactions  Transaction[]
+  conversations Conversation[]
 
   @@index([userId, isActive])
   @@map("financial_sessions")
@@ -70,8 +75,40 @@ model Transaction {
   category       String
   amount         Float
   descriptionEnc String?          @map("description_enc")
+  merchant       String?
   createdAt      DateTime         @default(now()) @map("created_at")
 
   @@index([sessionId, date])
   @@map("transactions")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String   @map("session_id")
+  session   FinancialSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  title     String?
+  summary   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages ConversationMessage[]
+
+  @@index([userId, updatedAt])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // user | assistant | tool
+  content        String       @db.Text
+  toolName       String?      @map("tool_name")
+  toolPayload    Json?        @map("tool_payload")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@map("conversation_messages")
 }

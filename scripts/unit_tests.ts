@@ -3,7 +3,7 @@ import { parseBankCsv, inferIncomeBracket } from "../lib/csv/parseBankCsv";
 import { encryptField, decryptField } from "../lib/security/encryption";
 import { signAccessToken, verifyAccessToken } from "../lib/auth/jwt";
 import { computeBenchmark } from "../lib/benchmark/computeBenchmark";
-import { computeGoal, purchaseDailyBurn } from "../lib/context/FinancialContextProvider";
+import { computeGoal, purchaseDailyBurn } from "../lib/ahead/goalMath";
 import { formatDecideReply } from "../lib/decide/formatReply";
 import { buildGoalInsight, buildBenchmarkInsights } from "../lib/ahead/insights";
 import priya from "../data/personas/persona-priya.json";

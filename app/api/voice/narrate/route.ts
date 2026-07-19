@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 /** Optional ElevenLabs TTS for DECIDE verdict narration (TIER2-11). */
 export async function POST(req: NextRequest) {
-  const limited = rateLimit({ key: clientKey(req, "voice"), limit: 20, windowMs: 60_000 });
+  const limited = await rateLimit({ key: clientKey(req, "voice"), limit: 20, windowMs: 60_000 });
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many requests" },

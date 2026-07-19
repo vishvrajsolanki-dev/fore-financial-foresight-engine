@@ -49,7 +49,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const ctx = await sessionToContext(auth.sid, auth.sub);
+  const ctx = await sessionToContext(auth.sid, {
+    userId: auth.sub,
+    decryptDescriptions: false,
+  });
   if (!ctx) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
@@ -83,6 +86,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const ctx = await sessionToContext(auth.sid, auth.sub);
+  const ctx = await sessionToContext(auth.sid, {
+    userId: auth.sub,
+    decryptDescriptions: false,
+  });
   return NextResponse.json({ context: ctx });
 }

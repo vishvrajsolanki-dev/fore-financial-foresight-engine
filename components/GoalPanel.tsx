@@ -6,11 +6,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  computeGoal,
-  purchaseDailyBurn,
-  useFinancialContext,
-} from "@/lib/context/FinancialContextProvider";
+import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
+import { computeGoal, purchaseDailyBurn } from "@/lib/ahead/goalMath";
 import { features } from "@/lib/features";
 import { buildGoalInsight } from "@/lib/ahead/insights";
 import { exportAheadSummaryPng } from "@/lib/export/aheadSummary";

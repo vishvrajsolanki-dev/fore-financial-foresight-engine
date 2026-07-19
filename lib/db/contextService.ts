@@ -10,39 +10,73 @@ function txToDb(t: Transaction) {
     category: t.category,
     amount: t.amount,
     descriptionEnc: t.description ? encryptField(t.description) : null,
+    merchant: t.merchant ?? null,
   };
 }
 
-function txFromDb(row: {
-  date: string;
-  category: string;
-  amount: number;
-  descriptionEnc: string | null;
-}): Transaction {
+function txFromDb(
+  row: {
+    date: string;
+    category: string;
+    amount: number;
+    descriptionEnc: string | null;
+    merchant?: string | null;
+  },
+  opts: { decryptDescriptions: boolean }
+): Transaction {
   return {
     date: row.date,
     category: row.category,
     amount: row.amount,
-    description: row.descriptionEnc ? decryptField(row.descriptionEnc) : undefined,
+    merchant: row.merchant ?? undefined,
+    description:
+      opts.decryptDescriptions && row.descriptionEnc
+        ? decryptField(row.descriptionEnc)
+        : undefined,
   };
 }
 
+export type SessionToContextOpts = {
+  userId?: string;
+  /** When false, skip AES decrypt — enough for classify/burn/decide spine. Default false for perf. */
+  decryptDescriptions?: boolean;
+  /** Cap transactions returned (newest-first then re-sorted). */
+  transactionLimit?: number;
+};
+
 export async function sessionToContext(
   sessionId: string,
-  userId?: string
+  userIdOrOpts?: string | SessionToContextOpts
 ): Promise<FinancialContext | null> {
-  const session = userId
+  const opts: SessionToContextOpts =
+    typeof userIdOrOpts === "string" ? { userId: userIdOrOpts } : userIdOrOpts ?? {};
+  const decryptDescriptions = opts.decryptDescriptions === true;
+  const limit = opts.transactionLimit;
+
+  const session = opts.userId
     ? await prisma.financialSession.findFirst({
-        where: { id: sessionId, userId },
-        include: { transactions: { orderBy: { date: "asc" } } },
+        where: { id: sessionId, userId: opts.userId },
+        include: {
+          transactions: {
+            orderBy: { date: "asc" },
+            ...(limit ? { take: limit } : {}),
+          },
+        },
       })
     : await prisma.financialSession.findUnique({
         where: { id: sessionId },
-        include: { transactions: { orderBy: { date: "asc" } } },
+        include: {
+          transactions: {
+            orderBy: { date: "asc" },
+            ...(limit ? { take: limit } : {}),
+          },
+        },
       });
   if (!session) return null;
 
-  const transactions = session.transactions.map(txFromDb);
+  const transactions = session.transactions.map((row) =>
+    txFromDb(row, { decryptDescriptions })
+  );
 
   return {
     session_id: session.id,
@@ -59,6 +93,58 @@ export async function sessionToContext(
     goal: session.goal as FinancialContext["goal"],
     last_decide_verdict: session.lastDecideVerdict as FinancialContext["last_decide_verdict"],
     benchmark: session.benchmark as FinancialContext["benchmark"],
+  };
+}
+
+/** Spine for LLM prompts — no transaction rows, no decrypted narrations. */
+export async function sessionToSpine(sessionId: string, userId: string) {
+  const session = await prisma.financialSession.findFirst({
+    where: { id: sessionId, userId, isActive: true },
+  });
+  if (!session) return null;
+  return {
+    session_id: session.id,
+    persona: session.persona ?? "Your data",
+    monthly_income: session.monthlyIncome,
+    income_bracket: session.incomeBracket,
+    city_tier: session.cityTier,
+    archetype: session.archetypeLabel
+      ? {
+          label: session.archetypeLabel as ArchetypeLabel,
+          distances: (session.archetypeDistances as Record<string, number>) ?? {},
+        }
+      : null,
+    burn_rate: session.burnRate as FinancialContext["burn_rate"],
+    goal: session.goal as FinancialContext["goal"],
+    last_decide_verdict: session.lastDecideVerdict as FinancialContext["last_decide_verdict"],
+    benchmark: session.benchmark as FinancialContext["benchmark"],
+  };
+}
+
+export async function listTransactionsPage(opts: {
+  sessionId: string;
+  userId: string;
+  cursor?: string;
+  limit?: number;
+  decryptDescriptions?: boolean;
+}) {
+  const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
+  const rows = await prisma.transaction.findMany({
+    where: {
+      sessionId: opts.sessionId,
+      session: { userId: opts.userId },
+      ...(opts.cursor ? { id: { lt: opts.cursor } } : {}),
+    },
+    orderBy: [{ date: "desc" }, { id: "desc" }],
+    take: limit + 1,
+  });
+  const page = rows.slice(0, limit);
+  const nextCursor = rows.length > limit ? page[page.length - 1]?.id : null;
+  return {
+    transactions: page.map((r) =>
+      txFromDb(r, { decryptDescriptions: opts.decryptDescriptions === true })
+    ),
+    nextCursor,
   };
 }
 
@@ -114,38 +200,50 @@ export async function createSessionFromTransactions(opts: {
   persona?: string;
   csvFileName?: string;
 }) {
-  await prisma.financialSession.updateMany({
-    where: { userId: opts.userId, isActive: true },
-    data: { isActive: false },
-  });
+  return prisma.$transaction(async (tx) => {
+    await tx.financialSession.updateMany({
+      where: { userId: opts.userId, isActive: true },
+      data: { isActive: false },
+    });
 
-  const session = await prisma.financialSession.create({
-    data: {
-      userId: opts.userId,
-      persona: opts.persona ?? null,
-      monthlyIncome: opts.monthlyIncome,
-      incomeBracket: opts.incomeBracket,
-      cityTier: opts.cityTier,
-      dataSource: opts.dataSource,
-      csvFileName: opts.csvFileName ?? null,
-      isActive: true,
-      transactions: {
-        create: opts.transactions.map(txToDb),
+    const session = await tx.financialSession.create({
+      data: {
+        userId: opts.userId,
+        persona: opts.persona ?? null,
+        monthlyIncome: opts.monthlyIncome,
+        incomeBracket: opts.incomeBracket,
+        cityTier: opts.cityTier,
+        dataSource: opts.dataSource,
+        csvFileName: opts.csvFileName ?? null,
+        isActive: true,
+        transactions: {
+          create: opts.transactions.map(txToDb),
+        },
       },
-    },
+    });
+
+    return session.id;
+  }).then(async (sessionId) => {
+    if (opts.transactions.length > 0) {
+      try {
+        await computeAndPersistPast(
+          sessionId,
+          opts.transactions,
+          opts.monthlyIncome,
+          opts.incomeBracket,
+          opts.cityTier
+        );
+      } catch (err) {
+        // Roll back active flag if analytics fail — leave session inactive.
+        await prisma.financialSession.update({
+          where: { id: sessionId },
+          data: { isActive: false },
+        });
+        throw err;
+      }
+    }
+    return sessionId;
   });
-
-  if (opts.transactions.length > 0) {
-    await computeAndPersistPast(
-      session.id,
-      opts.transactions,
-      opts.monthlyIncome,
-      opts.incomeBracket,
-      opts.cityTier
-    );
-  }
-
-  return session.id;
 }
 
 export async function patchSessionContext(
@@ -173,4 +271,22 @@ export async function patchSessionContext(
     },
   });
   return true;
+}
+
+/** Load signed transactions for tool math without decrypting descriptions. */
+export async function loadSessionTransactions(
+  sessionId: string,
+  userId: string
+): Promise<Transaction[]> {
+  const rows = await prisma.transaction.findMany({
+    where: { sessionId, session: { userId } },
+    orderBy: { date: "asc" },
+    select: { date: true, category: true, amount: true, merchant: true },
+  });
+  return rows.map((r) => ({
+    date: r.date,
+    category: r.category,
+    amount: r.amount,
+    merchant: r.merchant ?? undefined,
+  }));
 }
