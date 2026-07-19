@@ -142,145 +142,137 @@ function LoginForm() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:py-14">
-      <div className="grid gap-5 lg:grid-cols-[400px_1fr]">
-        {/* Left: sign-in card */}
-        <div className="card rise-in p-7">
-          <h1 className="text-2xl font-bold tracking-tight">Welcome to FORE</h1>
-          <p className="muted mt-1 text-sm">Sign in to see your money, clearly.</p>
-
-          <div className="mt-6 grid gap-2.5">
-            {providers.google && (
-              <button
-                type="button"
-                className="btn-provider"
-                disabled={busy}
-                onClick={() => providerSignIn("google")}
-              >
-                {providerLoading === "google" ? (
-                  <span
-                    className="spinner"
-                    style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }}
-                  />
-                ) : (
-                  <GoogleIcon />
-                )}
-                Continue with Google
-              </button>
-            )}
-            {/* Microsoft is optional — only shown when MS_CLIENT_ID/SECRET are set */}
-            {providers.microsoft && (
-              <button
-                type="button"
-                className="btn-provider"
-                disabled={busy}
-                onClick={() => providerSignIn("microsoft")}
-              >
-                {providerLoading === "microsoft" ? (
-                  <span
-                    className="spinner"
-                    style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }}
-                  />
-                ) : (
-                  <MicrosoftIcon />
-                )}
-                Continue with Microsoft
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn-provider"
-              disabled={busy}
-              onClick={() => router.push("/past")}
-            >
-              Explore with demo data
-            </button>
-          </div>
-
-          <div className="auth-divider my-5">or with email</div>
-
-          <form className="grid gap-3.5" onSubmit={onSubmit}>
-            <label className="grid gap-1">
-              <span className="muted text-xs font-semibold">Email</span>
-              <input
-                className="input"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label className="grid gap-1">
-              <span className="muted text-xs font-semibold">Password</span>
-              <input
-                className="input"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            {error && (
-              <p className="text-sm" style={{ color: "var(--danger)" }}>
-                {error}
-              </p>
-            )}
-            <button className="btn btn-shine mt-1" type="submit" disabled={busy}>
-              {loading ? (
-                <>
-                  <span className="spinner" /> Signing in…
-                </>
-              ) : (
-                "Sign in"
-              )}
-            </button>
-          </form>
-
-          <p className="muted mt-5 text-center text-sm">
-            No account?{" "}
-            <Link href="/register" className="underline">
-              Register
-            </Link>{" "}
-            ·{" "}
-            <Link href="/docs/security" className="underline">
-              Security docs
-            </Link>
-          </p>
-        </div>
-
-        {/* Right: product story */}
-        <aside className="feature-panel rise-in" style={{ animationDelay: "80ms" }}>
-          <p className="text-3xl font-bold tracking-[0.12em]">
-            F<span style={{ color: "var(--accent)" }}>O</span>RE
-          </p>
-          <p className="muted mt-2 max-w-md text-sm leading-relaxed">
-            One platform, three linked faces on a shared data spine. Bring your
-            transactions — get your past decoded, your decisions grounded, and your
-            goals paced.
-          </p>
-
-          <div className="mt-6 grid gap-5">
-            {FEATURES.map((f, i) => (
-              <div
-                key={f.title}
-                className="rise-in flex gap-3.5"
-                style={{ animationDelay: `${140 + i * 60}ms` }}
-              >
-                <div className="feature-icon">{f.icon}</div>
-                <div>
-                  <p className="text-sm font-semibold">{f.title}</p>
-                  <p className="muted mt-0.5 max-w-md text-sm leading-relaxed">{f.blurb}</p>
+    <div className="auth-grain relative min-h-screen">
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 py-10 sm:px-8 lg:py-16">
+        {/* One composition: brand leads, then CTA — not a dashboard */}
+        <div className="grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="rise-in order-2 lg:order-1">
+            <p className="fore-brand text-5xl sm:text-6xl lg:text-7xl">
+              F<span style={{ color: "var(--accent)" }}>O</span>RE
+            </p>
+            <p className="display mt-5 max-w-xl text-2xl sm:text-3xl text-[var(--text)]">
+              Your statement becomes a profile, a runway, and a clear yes or no.
+            </p>
+            <p className="muted mt-4 max-w-lg text-base leading-relaxed">
+              Upload a bank CSV. We assign your archetype from spending patterns, project when
+              money runs out if income stops, and answer affordability with real math — not vibes.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-6 text-sm">
+              {FEATURES.map((f) => (
+                <div key={f.title} className="max-w-[14rem]">
+                  <p className="font-semibold text-[var(--accent)]">{f.title.split("—")[0]?.trim()}</p>
+                  <p className="muted mt-1 text-xs leading-relaxed">{f.blurb}</p>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </section>
 
-          <span className="pill mt-7">CSV in → clarity out · no bank linking required</span>
-        </aside>
+          <section className="card rise-in order-1 lg:order-2 p-7 sm:p-8" style={{ animationDelay: "60ms" }}>
+            <h1 className="display text-2xl">Sign in</h1>
+            <p className="muted mt-1 text-sm">See your money clearly — Google or email.</p>
+
+            <div className="mt-6 grid gap-2.5">
+              {providers.google && (
+                <button
+                  type="button"
+                  className="btn-provider"
+                  disabled={busy}
+                  onClick={() => providerSignIn("google")}
+                >
+                  {providerLoading === "google" ? (
+                    <span
+                      className="spinner"
+                      style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }}
+                    />
+                  ) : (
+                    <GoogleIcon />
+                  )}
+                  Continue with Google
+                </button>
+              )}
+              {providers.microsoft && (
+                <button
+                  type="button"
+                  className="btn-provider"
+                  disabled={busy}
+                  onClick={() => providerSignIn("microsoft")}
+                >
+                  {providerLoading === "microsoft" ? (
+                    <span
+                      className="spinner"
+                      style={{ borderColor: "rgba(36,28,22,.25)", borderTopColor: "var(--text)" }}
+                    />
+                  ) : (
+                    <MicrosoftIcon />
+                  )}
+                  Continue with Microsoft
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-provider"
+                disabled={busy}
+                onClick={() => router.push("/past")}
+              >
+                Explore with sample data
+              </button>
+            </div>
+
+            <div className="auth-divider my-5">or with email</div>
+
+            <form className="grid gap-3.5" onSubmit={onSubmit}>
+              <label className="grid gap-1">
+                <span className="muted text-xs font-semibold">Email</span>
+                <input
+                  className="input"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="muted text-xs font-semibold">Password</span>
+                <input
+                  className="input"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+              {error && (
+                <p className="text-sm" style={{ color: "var(--danger)" }}>
+                  {error}
+                </p>
+              )}
+              <button className="btn mt-1" type="submit" disabled={busy}>
+                {loading ? (
+                  <>
+                    <span className="spinner" /> Signing in…
+                  </>
+                ) : (
+                  "Sign in"
+                )}
+              </button>
+            </form>
+
+            <p className="muted mt-5 text-center text-sm">
+              No account?{" "}
+              <Link href="/register" className="underline">
+                Register
+              </Link>{" "}
+              ·{" "}
+              <Link href="/docs/security" className="underline">
+                Security
+              </Link>
+            </p>
+          </section>
+        </div>
       </div>
     </div>
   );

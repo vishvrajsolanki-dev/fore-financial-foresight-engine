@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Mic } from "lucide-react";
 import FaceIntro from "@/components/FaceIntro";
 import { features } from "@/lib/features";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
@@ -243,8 +244,8 @@ export default function DecideChat() {
           <div className="flex flex-col gap-3">
             {messages.map((m, i) => (
               <div
-                key={i}
-                className={`max-w-[85%] rounded-2xl px-4 py-2 ${
+                key={`${m.role}-${i}-${m.text.slice(0, 24)}`}
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 rise-in ${
                   m.role === "user" ? "self-end bg-[var(--accent)] text-white" : "self-start"
                 }`}
                 style={
@@ -325,9 +326,13 @@ export default function DecideChat() {
             className="btn-ghost shrink-0"
             onClick={startVoiceInput}
             disabled={loading || listening}
-            aria-label="Voice input"
+            aria-label={listening ? "Listening for voice input" : "Start voice input"}
+            aria-pressed={listening}
           >
-            {listening ? "🎤…" : "🎤"}
+            <Mic size={18} strokeWidth={1.75} aria-hidden />
+            <span className="sr-only sm:not-sr-only sm:inline text-sm">
+              {listening ? "Listening…" : "Voice"}
+            </span>
           </button>
         )}
         <button className="btn shrink-0" type="submit" disabled={loading || !input.trim()}>
