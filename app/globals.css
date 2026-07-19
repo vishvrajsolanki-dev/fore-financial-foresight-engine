@@ -243,6 +243,30 @@ button:disabled,
   .app-persona-select {
     @apply max-w-[13rem] text-sm py-1.5;
   }
+  /* Narrow phones: stack chrome so tabs remain tappable */
+  @media (max-width: 639px) {
+    .app-topbar-row {
+      @apply flex-col items-stretch gap-2;
+    }
+    .app-tabs {
+      @apply w-full justify-stretch;
+    }
+    .app-tabs .face-tab {
+      @apply flex-1 justify-center;
+    }
+    .app-topbar-actions {
+      @apply w-full justify-between;
+    }
+    .app-persona-group {
+      @apply w-full min-w-0;
+    }
+    .app-persona-select {
+      @apply max-w-none w-full min-w-0;
+    }
+    .persona-chips {
+      @apply ml-0 w-full;
+    }
+  }
   .persona-chips {
     @apply flex flex-wrap gap-1.5 ml-auto;
   }
