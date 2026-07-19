@@ -34,13 +34,18 @@ async function main() {
 `;
   const k = parseBankCsv(kotak);
   if (k.detectedFormat !== "kotak_amount_drcr") throw new Error("kotak format");
-  if (k.rowCount !== 3) throw new Error(`kotak rows ${k.rowCount}`);
-  if (k.transactions[0].category !== "food") throw new Error("swiggy→food");
-  if (k.transactions[1].category !== "transfers") throw new Error("p2p→transfers");
-  if (k.transactions[2].category !== "income" && k.transactions[2].category !== "transfers") {
+  // opening_balance seeded from first Balance column + 3 statement rows
+  if (k.rowCount !== 4) throw new Error(`kotak rows ${k.rowCount}`);
+  if (k.transactions[0].category !== "opening_balance") throw new Error("opening balance seed");
+  if (Math.abs(k.transactions[0].amount - 10419) > 0.01) throw new Error("opening amount");
+  if (k.transactions[1].category !== "food") throw new Error("swiggy→food");
+  if (k.transactions[2].category !== "transfers") throw new Error("p2p→transfers");
+  if (k.transactions[3].category !== "income" && k.transactions[3].category !== "transfers") {
     throw new Error("mb credit category");
   }
-  if (!k.transactions[0].merchant?.includes("Swiggy")) throw new Error("merchant extract");
+  if (!k.transactions[1].merchant?.includes("Swiggy")) throw new Error("merchant extract");
+  const endBal = k.transactions.reduce((s, t) => s + t.amount, 0);
+  if (Math.abs(endBal - 24800) > 0.5) throw new Error(`ending balance ${endBal}`);
 
   const plain = "HDFC UPI payment ref 12345";
   if (decryptField(encryptField(plain)) !== plain) throw new Error("encryption");

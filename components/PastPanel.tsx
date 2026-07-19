@@ -205,7 +205,12 @@ export default function PastPanel() {
         <div className="card">
           <p className="muted text-sm">Projected zero-balance</p>
           <p className="text-2xl font-bold mt-1">{burn_rate.projected_zero_balance_date}</p>
-          <p className="muted text-xs mt-1">If income stopped at today&apos;s spend rate</p>
+          <p className="muted text-xs mt-1">
+            If income stopped at today&apos;s spend rate
+            {typeof burn_rate.runway_days_if_income_stopped === "number"
+              ? ` · ${burn_rate.runway_days_if_income_stopped} day(s) of runway`
+              : ""}
+          </p>
         </div>
       </div>
 
@@ -227,7 +232,7 @@ export default function PastPanel() {
                   stroke="var(--accent-2)"
                   strokeDasharray="6 3"
                   label={{
-                    value: `Projected $0 · ${projectedZeroMarker.label}`,
+                    value: `Projected ${currency === "INR" ? "₹" : currency === "EUR" ? "€" : "$"}0 · ${projectedZeroMarker.label}`,
                     position: "insideTopRight",
                     fill: "var(--muted)",
                     fontSize: 10,

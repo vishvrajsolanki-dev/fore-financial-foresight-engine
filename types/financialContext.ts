@@ -46,10 +46,14 @@ export interface FinancialContext {
   burn_rate: {
     daily_avg: number;
     trend_slope: number;
+    /** Runway if income/credits stopped (balance ÷ daily spend). */
     projected_zero_balance_date: string;
     weekly_seasonal?: number[];
     projected_zero_balance_date_low?: string;
     projected_zero_balance_date_high?: string;
+    /** When the straight-line net-balance trend would hit zero (may be years out). */
+    trend_zero_balance_date?: string;
+    runway_days_if_income_stopped?: number;
   } | null;
   transactions: Transaction[];
   goal: {

@@ -294,6 +294,8 @@ export function parseBankCsv(text: string): CsvParseResult {
   let skippedRows = 0;
   const seen = new Set<string>();
   let duplicatesRemoved = 0;
+  let openingBalance: number | null = null;
+  let openingDate: string | null = null;
 
   for (let i = headerIdx + 1; i < lines.length; i++) {
     const cells = parseCsvLine(lines[i]);
@@ -332,6 +334,20 @@ export function parseBankCsv(text: string): CsvParseResult {
     if (amount == null || amount === 0) {
       skippedRows++;
       continue;
+    }
+
+    // Seed opening balance from the first row's Balance column so charts match the statement.
+    if (openingBalance == null && cols.balance != null) {
+      const balAfter = parseAmount(cells[cols.balance] ?? "");
+      if (balAfter != null) {
+        const impliedOpen = balAfter - amount;
+        if (Number.isFinite(impliedOpen) && impliedOpen > 0.005) {
+          openingBalance = Math.round(impliedOpen * 100) / 100;
+          openingDate = iso;
+        } else {
+          openingBalance = 0;
+        }
+      }
     }
 
     // Credits: keep P2P receipts as transfers (not "income"/salary),
@@ -374,6 +390,16 @@ export function parseBankCsv(text: string): CsvParseResult {
   }
 
   transactions.sort((a, b) => a.date.localeCompare(b.date));
+
+  if (openingBalance != null && openingBalance > 0 && openingDate) {
+    transactions.unshift({
+      date: openingDate,
+      category: "opening_balance",
+      amount: openingBalance,
+      description: "Opening balance (from statement)",
+    });
+    warnings.push(`Seeded opening balance ₹${openingBalance.toLocaleString("en-IN")} from statement.`);
+  }
 
   if (transactions.length < 10) {
     warnings.push("Fewer than 10 transactions parsed — check column mapping or date format.");
