@@ -42,7 +42,7 @@ async function narrateVerdict(text: string): Promise<void> {
 }
 
 export default function DecideChat() {
-  const { ctx, applyDecideVerdict } = useFinancialContext();
+  const { ctx, applyDecideVerdict, fullStackEnabled } = useFinancialContext();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -76,24 +76,30 @@ export default function DecideChat() {
     const abortTimer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const res = await fetch("/api/decide", {
+      // Full-stack: server loads session context — do not ship the full ledger.
+      // Demo mode: send transactions for offline/local analysis.
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           message: q,
-          transactions: ctx.transactions,
           history,
-          financial_context: {
-            session_id: ctx.session_id,
-            persona: ctx.persona,
-            monthly_income: ctx.monthly_income,
-            archetype: ctx.archetype,
-            burn_rate: ctx.burn_rate,
-            goal: ctx.goal,
-            benchmark: ctx.benchmark,
-            last_decide_verdict: ctx.last_decide_verdict,
-          },
+          ...(fullStackEnabled
+            ? {}
+            : {
+                transactions: ctx.transactions,
+                financial_context: {
+                  session_id: ctx.session_id,
+                  persona: ctx.persona,
+                  monthly_income: ctx.monthly_income,
+                  archetype: ctx.archetype,
+                  burn_rate: ctx.burn_rate,
+                  goal: ctx.goal,
+                  benchmark: ctx.benchmark,
+                  last_decide_verdict: ctx.last_decide_verdict,
+                },
+              }),
         }),
         signal: controller.signal,
       });
@@ -104,20 +110,31 @@ export default function DecideChat() {
           { role: "assistant", text: data.error || "Something went wrong.", error: true },
         ]);
       } else {
-        const verdict = data.verdict;
-        const verified = !!(verdict && verdict.new_zero_balance_date);
-        if (verified) applyDecideVerdict(verdict);
+        const trace = Array.isArray(data.tool_trace) ? data.tool_trace : [];
+        const afford = trace.find((t: { name?: string }) => t.name === "canIAfford") as
+          | { name: string; args?: { item?: string; amount?: number }; result?: { day_shift?: number; new_zero_balance_date?: string; amount?: number } }
+          | undefined;
+        const result = afford?.result;
+        if (result?.new_zero_balance_date) {
+          applyDecideVerdict({
+            item: String(afford?.args?.item || "purchase"),
+            amount: Number(afford?.args?.amount) || Number(result.amount) || 0,
+            day_shift: Number(result.day_shift) || 0,
+            new_zero_balance_date: result.new_zero_balance_date,
+          });
+        }
+        const toolCalled = trace.length > 0;
         setMessages((m) => [
           ...m,
           {
             role: "assistant",
             text: data.reply,
-            toolCalled: !!data.tool_called && verified,
-            verified: data.verified !== false,
-            error: !!data.tool_called && !verified,
+            toolCalled,
+            verified: data.verified !== false && toolCalled,
+            error: false,
           },
         ]);
-        if (verified && data.reply) void narrateVerdict(data.reply);
+        if (toolCalled && data.reply) void narrateVerdict(data.reply);
       }
     } catch (err) {
       const timedOut = err instanceof DOMException && err.name === "AbortError";

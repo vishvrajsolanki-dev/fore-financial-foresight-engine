@@ -8,6 +8,10 @@ import {
   canIAfford,
   type CanIAffordOutput,
 } from "@/lib/tools/canIAfford";
+import { isAuthPayload, requireAuth } from "@/lib/auth/session";
+import { loadSessionTransactions, sessionToSpine } from "@/lib/db/contextService";
+import { isDatabaseConfigured } from "@/lib/db/prisma";
+import { clientKey, rateLimit } from "@/lib/security/rateLimit";
 import type { FinancialContext, Transaction } from "@/types/financialContext";
 
 export const runtime = "nodejs";
@@ -239,23 +243,62 @@ async function selfVerifyReply(
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit({ key: clientKey(req, "decide"), limit: 30, windowMs: 60_000 });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests — try again shortly." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const message: unknown = body?.message;
-  const transactions: Transaction[] = Array.isArray(body?.transactions) ? body.transactions : [];
   const history = sanitizeHistory(body?.history);
-  const financialContext: Partial<FinancialContext> | null =
-    body?.financial_context && typeof body.financial_context === "object"
-      ? body.financial_context
-      : null;
 
   if (!message || typeof message !== "string") {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
-  if (transactions.length === 0) {
-    return NextResponse.json(
-      { error: "Select a persona first — no transactions in context." },
-      { status: 400 }
-    );
+
+  let transactions: Transaction[] = [];
+  let financialContext: Partial<FinancialContext> | null = null;
+
+  if (isDatabaseConfigured()) {
+    // Full-stack: require auth and load context server-side (ignore client-supplied rows).
+    const auth = await requireAuth(req);
+    if (!isAuthPayload(auth)) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const spine = await sessionToSpine(auth.sid, auth.sub);
+    transactions = await loadSessionTransactions(auth.sid, auth.sub);
+    if (!spine || transactions.length === 0) {
+      return NextResponse.json(
+        { error: "No transactions in your session — upload a CSV or load a persona first." },
+        { status: 400 }
+      );
+    }
+    financialContext = {
+      session_id: spine.session_id,
+      persona: spine.persona,
+      monthly_income: spine.monthly_income,
+      archetype: spine.archetype,
+      burn_rate: spine.burn_rate,
+      goal: spine.goal,
+      benchmark: spine.benchmark,
+      last_decide_verdict: spine.last_decide_verdict,
+    };
+  } else {
+    // Demo mode (no DB): client may supply transactions.
+    transactions = Array.isArray(body?.transactions) ? body.transactions : [];
+    financialContext =
+      body?.financial_context && typeof body.financial_context === "object"
+        ? body.financial_context
+        : null;
+    if (transactions.length === 0) {
+      return NextResponse.json(
+        { error: "Select a persona first — no transactions in context." },
+        { status: 400 }
+      );
+    }
   }
 
   const systemPrompt = buildSystemPrompt(financialContext);
@@ -332,7 +375,7 @@ export async function POST(req: NextRequest) {
       exa_used: !!exaHint,
     });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : "Groq request failed";
-    return NextResponse.json({ error: detail }, { status: 502 });
+    console.error("DECIDE Groq error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Decision service temporarily unavailable" }, { status: 502 });
   }
 }

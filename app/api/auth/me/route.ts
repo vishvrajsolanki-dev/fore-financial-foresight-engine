@@ -25,7 +25,20 @@ export async function GET() {
     return NextResponse.json({ authenticated: false, database: true });
   }
 
-  const ctx = await sessionToContext(auth.sid);
+  // Re-bind sid to this user (defense-in-depth vs stale/foreign session ids in JWT).
+  const owned = await prisma.financialSession.findFirst({
+    where: { id: auth.sid, userId: auth.sub, isActive: true },
+    select: { id: true },
+  });
+  if (!owned) {
+    return NextResponse.json({ authenticated: false, database: true });
+  }
+
+  // Skip description decrypt on hydrate — charts/ML don't need narrations.
+  const ctx = await sessionToContext(auth.sid, {
+    userId: auth.sub,
+    decryptDescriptions: false,
+  });
 
   return NextResponse.json({
     authenticated: true,

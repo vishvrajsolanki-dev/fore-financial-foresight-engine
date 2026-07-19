@@ -47,13 +47,27 @@ export default function PastPanel() {
     if (!ctx?.transactions?.length) return [];
     const sorted = [...ctx.transactions].sort((a, b) => a.date.localeCompare(b.date));
     let running = 0;
-    // Sample to ~1 point per week to keep the line readable.
-    const points: { date: string; balance: number }[] = [];
+    // Bucket to one point per calendar week so 12-month statements stay readable.
+    const weekMap = new Map<string, number>();
     for (const t of sorted) {
       running += t.amount;
-      points.push({ date: t.date.slice(5), balance: Math.round(running) });
+      const d = new Date(t.date + "T00:00:00Z");
+      const day = d.getUTCDay();
+      const weekStart = new Date(d);
+      weekStart.setUTCDate(d.getUTCDate() - day);
+      const key = weekStart.toISOString().slice(0, 10);
+      weekMap.set(key, Math.round(running));
     }
-    return points;
+    return Array.from(weekMap.entries()).map(([date, balance]) => ({
+      date: date.slice(5),
+      balance,
+    }));
+  }, [ctx?.transactions]);
+
+  const balanceWindowLabel = useMemo(() => {
+    if (!ctx?.transactions?.length) return "Running balance";
+    const dates = ctx.transactions.map((t) => t.date).sort();
+    return `Running balance · ${dates[0]} → ${dates[dates.length - 1]}`;
   }, [ctx?.transactions]);
 
   if (pastLoading) {
@@ -179,7 +193,7 @@ export default function PastPanel() {
       </div>
 
       <div className="card">
-        <p className="muted text-sm mb-3">Running balance over the last 3 months</p>
+        <p className="muted text-sm mb-3">{balanceWindowLabel}</p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={balanceSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>

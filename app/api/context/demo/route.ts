@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   });
 
   const accessToken = await signAccessToken({ sub: auth.sub, sid: sessionId });
-  const ctx = await sessionToContext(sessionId);
+  const ctx = await sessionToContext(sessionId, auth.sub);
 
   const res = NextResponse.json({ sessionId, context: ctx });
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));

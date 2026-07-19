@@ -34,11 +34,14 @@ export default function BenchmarkPanel() {
 
   return (
     <div className="card">
-      <p className="face-kicker">Peer benchmark</p>
+      <p className="face-kicker">Peer benchmark (modeled)</p>
       <p className="mt-1 text-lg font-semibold">
         {persona.income_bracket} · {persona.city_tier}
       </p>
       <p className="muted mt-1 text-sm">{summary}</p>
+      <p className="muted mt-1 text-xs">
+        Percentiles use authored peer tables for demos — not a live survey of real users.
+      </p>
 
       <div className="mt-4 grid gap-4">
         {insights.map((row) => {

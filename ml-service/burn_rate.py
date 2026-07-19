@@ -27,6 +27,9 @@ def _signed_amount(txn: dict) -> float:
     """Credits positive (money in), debits negative (money out)."""
     amount = float(txn.get("amount", 0))
     category = str(txn.get("category", "")).strip().lower()
+    # P2P transfers carry a real signed amount (in or out) — trust the sign.
+    if category == "transfers":
+        return amount
     if category in _CREDIT_CATEGORIES:
         return abs(amount)
     return -abs(amount)

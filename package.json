@@ -13,10 +13,15 @@
     "verify": "python3 scripts/verify_task004.py",
     "smoke": "python3 scripts/smoke_demo_spine.py",
     "test:all": "bash scripts/run_full_tests.sh",
-    "test:ml": "cd ml-service && python3 -m pytest -q"
+    "test:ml": "cd ml-service && python3 -m pytest -q",
+    "test:unit": "npx tsx scripts/unit_tests.ts",
+    "test:csv": "npx tsx scripts/verify_real_csv.ts",
+    "test:parity": "npx tsx scripts/ml_parity_test.ts",
+    "test:auth": "npx tsx scripts/auth_oauth_unit.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "arctic": "^3.7.0",
     "bcryptjs": "^3.0.3",
     "groq-sdk": "0.7.0",
     "jose": "^6.2.3",

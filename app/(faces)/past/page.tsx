@@ -1,4 +1,3 @@
-import FaceIntro from "@/components/FaceIntro";
 import PastPanel from "@/components/PastPanel";
 import CsvUploadPanel from "@/components/CsvUploadPanel";
 

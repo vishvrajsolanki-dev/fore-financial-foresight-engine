@@ -21,8 +21,11 @@ export type ArchetypeLabel =
 export interface Transaction {
   date: string; // ISO date (YYYY-MM-DD)
   category: SpendCategory | string;
-  amount: number; // INR, positive = outflow (except savings may be treated as allocation)
+  /** Signed INR: positive = credit/inflow, negative = debit/outflow. */
+  amount: number;
   description?: string;
+  /** Best-effort merchant token extracted from the bank narration (optional). */
+  merchant?: string;
 }
 
 /**

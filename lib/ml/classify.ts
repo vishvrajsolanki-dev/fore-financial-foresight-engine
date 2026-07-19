@@ -13,7 +13,15 @@ const CATEGORY_MAP: Record<string, string> = {
   "mutual fund": "savings", deposit: "savings", fd: "savings", rd: "savings",
 };
 
-const CREDIT_CATEGORIES = new Set(["income", "salary", "credit", "refund", "cashback", "opening_balance"]);
+const CREDIT_CATEGORIES = new Set([
+  "income",
+  "salary",
+  "credit",
+  "refund",
+  "cashback",
+  "opening_balance",
+  "transfers", // P2P UPI — exclude from spend archetype ratios
+]);
 const AVG_DAYS_PER_MONTH = 30.44;
 
 function parseDate(value: string): Date {
