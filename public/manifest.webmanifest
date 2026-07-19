@@ -1,0 +1,16 @@
+{
+  "name": "FORE — Financial Foresight Engine",
+  "short_name": "FORE",
+  "description": "PAST, DECIDE, AHEAD — one financial context, three linked views.",
+  "start_url": "/past",
+  "display": "standalone",
+  "background_color": "#faf6f0",
+  "theme_color": "#c45c26",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: ML parity (inline TS, skip Python)
+        run: SKIP_PYTHON=1 npm run test:parity
+
+      - name: ML pytest
+        run: |
+          cd ml-service
+          pip install -q -r requirements.txt pytest httpx
+          python3 -m pytest -q
+
+      - name: Build
+        env:
+          JWT_ACCESS_SECRET: ci-test-jwt-secret-min-32-chars-long
+          DATA_ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS0zMmJ5dGVzIQ==
+        run: npm run build

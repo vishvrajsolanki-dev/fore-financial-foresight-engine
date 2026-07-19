@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
 
 import { isAuthPayload, requireAuth } from "@/lib/auth/session";
 import { chatTools, executeTool, type ToolContext } from "@/lib/chat/tools";
+import { verifyReplyAgainstTools } from "@/lib/chat/verifyReply";
 import {
   loadSessionTransactions,
   sessionToSpine,
   patchSessionContext,
 } from "@/lib/db/contextService";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
-import { clientKey, rateLimit } from "@/lib/security/rateLimit";
+import { chatCompletion } from "@/lib/llm/provider";
+import { actorKey, rateLimit } from "@/lib/security/rateLimit";
 import { canIAffordMath } from "@/lib/ml/canIAfford";
 import type { Transaction } from "@/types/financialContext";
 import type { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 
 function parseToolArgs(raw: string): unknown {
   try {
@@ -27,15 +26,13 @@ function parseToolArgs(raw: string): unknown {
   }
 }
 
-export async function POST(req: NextRequest) {
-  const limited = await rateLimit({ key: clientKey(req, "chat"), limit: 40, windowMs: 60_000 });
-  if (!limited.ok) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
-    );
-  }
+function hasLlmConfigured(): boolean {
+  const provider = (process.env.LLM_PROVIDER || "groq").toLowerCase();
+  if (provider === "ollama" || provider === "lmstudio") return true;
+  return !!process.env.GROQ_API_KEY?.trim();
+}
 
+export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   if (!message) {
@@ -45,12 +42,14 @@ export async function POST(req: NextRequest) {
   let toolCtx: ToolContext | null = null;
   let conversationId: string | null =
     typeof body?.conversation_id === "string" ? body.conversation_id : null;
+  let userId: string | null = null;
 
   if (isDatabaseConfigured()) {
     const auth = await requireAuth(req);
     if (!isAuthPayload(auth)) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    userId = auth.sub;
     const spine = await sessionToSpine(auth.sid, auth.sub);
     const transactions = await loadSessionTransactions(auth.sid, auth.sub);
     if (!spine || transactions.length === 0) {
@@ -96,7 +95,6 @@ export async function POST(req: NextRequest) {
       data: { conversationId, role: "user", content: message },
     });
   } else {
-    // Demo mode: accept client transactions (no persistence).
     const transactions: Transaction[] = Array.isArray(body?.transactions) ? body.transactions : [];
     if (!transactions.length) {
       return NextResponse.json({ error: "Select a persona or upload a CSV first." }, { status: 400 });
@@ -120,6 +118,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Context unavailable" }, { status: 500 });
   }
 
+  const limited = await rateLimit({
+    key: actorKey(req, "chat", userId),
+    limit: 40,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
+  }
+
   const system = `You are FORE's financial assistant. You MUST call tools for any number you state.
 Never invent affordability, spend totals, burn rate, or goal math.
 Benchmark peers are modeled/synthetic — disclose that when citing them.
@@ -131,11 +141,9 @@ Spine summary: ${JSON.stringify({
     goal: toolCtx.spine.goal,
   })}`;
 
-  const apiKey = process.env.GROQ_API_KEY?.trim();
   const toolTrace: { name: string; args: unknown; result: unknown }[] = [];
 
-  if (!apiKey) {
-    // Deterministic affordability fallback
+  if (!hasLlmConfigured()) {
     const amountMatch = message.match(/₹?\s?([\d,]+(?:\.\d+)?)/);
     const amount = amountMatch ? Number(amountMatch[1].replace(/,/g, "")) : 0;
     const item = message.replace(/can i afford/i, "").trim() || "this purchase";
@@ -147,7 +155,7 @@ Spine summary: ${JSON.stringify({
     const reply =
       amount > 0 && result && "explanation" in result
         ? String((result as { explanation: string }).explanation)
-        : "I can run affordability math when Groq is unset — include an amount in your question.";
+        : "I can run affordability math when the LLM is unset — include an amount in your question.";
     if (conversationId && isDatabaseConfigured()) {
       await prisma.conversationMessage.create({
         data: {
@@ -167,31 +175,36 @@ Spine summary: ${JSON.stringify({
   }
 
   try {
-    const groq = new Groq({ apiKey });
     const history = Array.isArray(body?.history) ? body.history.slice(-8) : [];
-    const messages: Groq.Chat.ChatCompletionMessageParam[] = [
-      { role: "system", content: system },
+    const messages = [
+      { role: "system" as const, content: system },
       ...history.map((t: { role: "user" | "assistant"; content: string }) => ({
         role: t.role,
         content: t.content,
       })),
-      { role: "user", content: message },
+      { role: "user" as const, content: message },
     ];
 
     let rounds = 0;
     let finalText = "";
     while (rounds < 3) {
       rounds++;
-      const completion = await groq.chat.completions.create({
-        model: MODEL,
+      const completion = await chatCompletion({
         messages,
         tools: chatTools,
-        tool_choice: "auto",
       });
-      const choice = completion.choices[0].message;
-      if (choice.tool_calls?.length) {
-        messages.push(choice);
-        for (const call of choice.tool_calls) {
+
+      if (completion.tool_calls?.length) {
+        messages.push({
+          role: "assistant",
+          content: completion.content || "",
+          tool_calls: completion.tool_calls.map((tc) => ({
+            id: tc.id,
+            type: "function" as const,
+            function: { name: tc.function.name, arguments: tc.function.arguments },
+          })),
+        });
+        for (const call of completion.tool_calls) {
           const name = call.function.name;
           const args = parseToolArgs(call.function.arguments);
           const executed = await executeTool(name, args, toolCtx);
@@ -216,14 +229,20 @@ Spine summary: ${JSON.stringify({
           }
           messages.push({
             role: "tool",
-            tool_call_id: call.id,
             content: JSON.stringify(payload),
+            tool_call_id: call.id,
           });
         }
         continue;
       }
-      finalText = choice.content || "I need a tool result to answer with numbers.";
+      finalText = completion.content || "I need a tool result to answer with numbers.";
       break;
+    }
+
+    const verified = verifyReplyAgainstTools(finalText, toolTrace);
+    if (!verified) {
+      finalText +=
+        "\n\n(Self-check: re-run the numbers if this looks off — the underlying tool math is still real.)";
     }
 
     if (conversationId && isDatabaseConfigured()) {
@@ -241,7 +260,7 @@ Spine summary: ${JSON.stringify({
       reply: finalText,
       tool_trace: toolTrace,
       conversation_id: conversationId,
-      verified: toolTrace.length > 0,
+      verified,
     });
   } catch (err) {
     console.error("Chat error:", err instanceof Error ? err.message : err);

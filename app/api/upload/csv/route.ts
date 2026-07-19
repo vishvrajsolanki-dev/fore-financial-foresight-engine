@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { COOKIE_ACCESS, cookieOptions, signAccessToken } from "@/lib/auth/jwt";
 import { requireAuth, isAuthPayload } from "@/lib/auth/session";
-import { createSessionFromTransactions, sessionToContext } from "@/lib/db/contextService";
-import { isDatabaseConfigured } from "@/lib/db/prisma";
+import {
+  appendTransactionsToSession,
+  createSessionFromTransactions,
+  loadExistingFingerprints,
+  loadUserCategoryRules,
+  sessionToContext,
+} from "@/lib/db/contextService";
+import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import { parseBankCsv, inferIncomeBracket, inferCityTier } from "@/lib/csv/parseBankCsv";
+import { dedupeTransactions, transactionFingerprint } from "@/lib/ml/fingerprint";
+import { classifyTransactions } from "@/lib/ml/txnClassifier";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB — raw CSV never persisted, only parsed rows
+const MAX_BYTES = 5 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   if (!isDatabaseConfigured()) {
@@ -65,16 +73,78 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 422 });
   }
 
-  // Raw CSV is discarded after parse — only normalized transactions are stored (encrypted descriptions).
-  const sessionId = await createSessionFromTransactions({
-    userId: auth.sub,
-    transactions: parsed.transactions,
-    monthlyIncome,
-    incomeBracket: inferIncomeBracket(monthlyIncome),
-    cityTier,
-    dataSource: "csv",
-    persona: `Bank import (${file.name})`,
-    csvFileName: file.name,
+  const rules = await loadUserCategoryRules(auth.sub);
+  const classified = classifyTransactions(
+    parsed.transactions,
+    rules.map((r) => ({
+      matchType: r.matchType as "merchant" | "contains",
+      pattern: r.pattern,
+      category: r.category,
+    }))
+  );
+
+  const existingFp = await loadExistingFingerprints(auth.sub);
+  const { unique, skipped } = dedupeTransactions(classified, existingFp);
+  const enriched = unique.map((t) => ({
+    ...t,
+    fingerprint: transactionFingerprint(t),
+  }));
+
+  const activeSession = await prisma.financialSession.findFirst({
+    where: { userId: auth.sub, isActive: true, dataSource: "csv" },
+  });
+
+  let sessionId: string;
+
+  if (activeSession && enriched.length > 0) {
+    sessionId = activeSession.id;
+    await appendTransactionsToSession({
+      sessionId,
+      userId: auth.sub,
+      transactions: enriched,
+      fileName: file.name,
+      rowCount: enriched.length,
+    });
+  } else if (activeSession && enriched.length === 0) {
+    sessionId = activeSession.id;
+    await prisma.statementUpload.create({
+      data: {
+        sessionId,
+        userId: auth.sub,
+        fileName: file.name,
+        rowCount: 0,
+      },
+    });
+  } else {
+    sessionId = await createSessionFromTransactions({
+      userId: auth.sub,
+      transactions: enriched.map((t) => ({
+        ...t,
+        fingerprint: t.fingerprint,
+      })),
+      monthlyIncome,
+      incomeBracket: inferIncomeBracket(monthlyIncome),
+      cityTier,
+      dataSource: "csv",
+      persona: `Bank import (${file.name})`,
+      csvFileName: file.name,
+    });
+    if (enriched.length) {
+      await prisma.statementUpload.create({
+        data: {
+          sessionId,
+          userId: auth.sub,
+          fileName: file.name,
+          rowCount: enriched.length,
+        },
+      });
+    }
+  }
+
+  await prisma.userConsent.upsert({
+    where: { userId: auth.sub },
+    create: { userId: auth.sub, csvUploadAt: new Date(), aiProcessingAt: new Date() },
+    update: { csvUploadAt: new Date(), aiProcessingAt: new Date() },
   });
 
   const accessToken = await signAccessToken({ sub: auth.sub, sid: sessionId });
@@ -85,10 +155,11 @@ export async function POST(req: NextRequest) {
     context: ctx,
     meta: {
       rowCount: parsed.rowCount,
+      imported: enriched.length,
       skippedRows: parsed.skippedRows,
+      duplicatesSkipped: skipped + parsed.duplicatesRemoved,
       detectedFormat: parsed.detectedFormat,
       warnings: parsed.warnings,
-      duplicatesRemoved: parsed.duplicatesRemoved,
     },
   });
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));

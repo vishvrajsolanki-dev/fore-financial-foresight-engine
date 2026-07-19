@@ -32,7 +32,13 @@ ARCHETYPES = {
 }
 
 # The personas the frontend actually loads (lib/data/personas.ts).
-ACTIVE_PERSONAS = ["persona-priya", "persona-rahul", "persona-aisha"]
+ACTIVE_PERSONAS = [
+    "persona-priya",
+    "persona-rahul",
+    "persona-aisha",
+    "persona-riya",
+    "persona-arjun",
+]
 
 
 def load(name: str) -> dict:
@@ -85,10 +91,13 @@ def test_classify_no_spend_no_crash():
 # ---------------------------------------------------------------- burn-rate (CONTRACT-003)
 def test_burn_rate_contract_fields_and_types():
     out = compute_burn_rate(load("persona-aisha")["transactions"])
-    assert set(out.keys()) == {"daily_avg", "trend_slope", "projected_zero_balance_date"}
+    required = {"daily_avg", "trend_slope", "projected_zero_balance_date"}
+    assert required.issubset(out.keys())
     assert isinstance(out["daily_avg"], (int, float))
     assert isinstance(out["trend_slope"], (int, float))
-    date.fromisoformat(out["projected_zero_balance_date"])  # parseable ISO date
+    date.fromisoformat(out["projected_zero_balance_date"])
+    if "weekly_seasonal" in out:
+        assert isinstance(out["weekly_seasonal"], list) and len(out["weekly_seasonal"]) == 7
 
 
 def test_burn_rate_saver_trend_higher_than_impulsive():

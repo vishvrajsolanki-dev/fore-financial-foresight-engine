@@ -3,13 +3,28 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { callMl } from "@/lib/api/mlServer";
-import { clientKey, rateLimit } from "@/lib/security/rateLimit";
+import { isAuthPayload, requireAuth } from "@/lib/auth/session";
+import { isDatabaseConfigured } from "@/lib/db/prisma";
+import { actorKey, rateLimit } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const limited = await rateLimit({ key: clientKey(req, "ml-burn"), limit: 60, windowMs: 60_000 });
+  let userId: string | null = null;
+  if (isDatabaseConfigured()) {
+    const auth = await requireAuth(req);
+    if (!isAuthPayload(auth)) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    userId = auth.sub;
+  }
+
+  const limited = await rateLimit({
+    key: actorKey(req, "ml-burn", userId),
+    limit: 60,
+    windowMs: 60_000,
+  });
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many requests" },

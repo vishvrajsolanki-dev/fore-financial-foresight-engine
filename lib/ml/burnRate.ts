@@ -10,7 +10,6 @@ function parseDate(value: string): Date {
 function signedAmount(txn: Transaction): number {
   const amount = Number(txn.amount);
   const category = String(txn.category ?? "").trim().toLowerCase();
-  // P2P transfers carry a real signed amount (in or out) — trust the sign.
   if (category === "transfers") return amount;
   if (CREDIT_CATEGORIES.has(category)) return Math.abs(amount);
   return -Math.abs(amount);
@@ -24,6 +23,23 @@ function addDays(d: Date, days: number): Date {
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+/** Day-of-week spend multipliers (Sun=0 … Sat=6); 1.0 = average. */
+function weeklySeasonalFactors(dated: [Date, number][]): number[] {
+  const dowSpend = new Array(7).fill(0);
+  const dowCount = new Array(7).fill(0);
+
+  for (const [dt, amt] of dated) {
+    if (amt >= 0) continue;
+    const dow = dt.getUTCDay();
+    dowSpend[dow] += -amt;
+    dowCount[dow]++;
+  }
+
+  const dailyAvgs = dowSpend.map((s, i) => (dowCount[i] ? s / dowCount[i] : 0));
+  const overall = dailyAvgs.reduce((a, b) => a + b, 0) / 7 || 1;
+  return dailyAvgs.map((v) => (overall > 0 ? Math.round((v / overall) * 1000) / 1000 : 1));
 }
 
 export function computeBurnRate(transactions: Transaction[]) {
@@ -42,6 +58,7 @@ export function computeBurnRate(transactions: Transaction[]) {
 
   const totalSpend = dated.filter(([, amt]) => amt < 0).reduce((s, [, amt]) => s + -amt, 0);
   const dailyAvg = totalSpend / windowDays;
+  const weeklySeasonal = weeklySeasonalFactors(dated as [Date, number][]);
 
   const dailyNet = new Array<number>(windowDays).fill(0);
   for (const [txnDate, amt] of dated) {
@@ -75,6 +92,16 @@ export function computeBurnRate(transactions: Transaction[]) {
     fittedLast = meanB + slope * ((n - 1) - meanT);
   }
 
+  // Residual std for prediction interval on zero-crossing day
+  let residualStd = 0;
+  if (n >= 3) {
+    const meanT = (n - 1) / 2;
+    const meanB = balances.reduce((a, b) => a + b, 0) / n;
+    const residuals = balances.map((b, t) => b - (meanB + slope * (t - meanT)));
+    const mse = residuals.reduce((s, r) => s + r * r, 0) / (n - 2);
+    residualStd = Math.sqrt(mse);
+  }
+
   let daysToZero: number;
   if (slope < 0 && fittedLast > 0) {
     daysToZero = Math.min(Math.floor(fittedLast / -slope) + 1, PROJECTION_CAP_DAYS);
@@ -84,9 +111,17 @@ export function computeBurnRate(transactions: Transaction[]) {
     daysToZero = PROJECTION_CAP_DAYS;
   }
 
+  const projected = isoDate(addDays(lastDay, daysToZero));
+  const intervalDays = slope < 0 && residualStd > 0 ? Math.round(residualStd / Math.abs(slope)) : 0;
+  const projectedLow = isoDate(addDays(lastDay, Math.max(0, daysToZero - intervalDays)));
+  const projectedHigh = isoDate(addDays(lastDay, Math.min(daysToZero + intervalDays, PROJECTION_CAP_DAYS)));
+
   return {
     daily_avg: Math.round(dailyAvg * 100) / 100,
     trend_slope: Math.round(slope * 100) / 100,
-    projected_zero_balance_date: isoDate(addDays(lastDay, daysToZero)),
+    projected_zero_balance_date: projected,
+    weekly_seasonal: weeklySeasonal,
+    projected_zero_balance_date_low: projectedLow,
+    projected_zero_balance_date_high: projectedHigh,
   };
 }

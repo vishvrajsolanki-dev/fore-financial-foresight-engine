@@ -41,7 +41,9 @@ def test_burn_rate_endpoint_shape():
     d = load("persona-priya")
     r = client.post("/burn-rate", json={"transactions": d["transactions"]})
     assert r.status_code == 200
-    assert set(r.json().keys()) == {"daily_avg", "trend_slope", "projected_zero_balance_date"}
+    body = r.json()
+    required = {"daily_avg", "trend_slope", "projected_zero_balance_date"}
+    assert required.issubset(body.keys())
 
 
 def test_can_i_afford_endpoint_shape():

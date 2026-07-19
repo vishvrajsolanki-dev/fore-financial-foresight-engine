@@ -55,8 +55,8 @@ Set `DATA_ENCRYPTION_KEY` to a 32-byte base64 key in production (see `.env.examp
 
 ## LLM / DECIDE privacy
 
-- DECIDE receives `financial_context` JSON in the system prompt — amounts and categories, not encrypted blobs.
-- Transaction descriptions sent to Groq are decrypted server-side only for the active user's session.
+- Chat and DECIDE routes send a **spine summary** to the LLM — archetype label, monthly income, burn rate, goal, and tool results (category totals, amounts, dates). Encrypted narration blobs are **not** sent by default.
+- Transaction descriptions are decrypted **only** when the model calls the scoped `searchTransactions` tool with `allow_descriptions: true` — and only for the authenticated user's session rows.
 - Do not log request bodies containing financial context in production.
 
 ## Environment variables (required for production full-stack)

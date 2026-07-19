@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import ThemeGuard from "@/components/ThemeGuard";
+import PwaRegister from "@/components/PwaRegister";
 import { FinancialContextProvider } from "@/lib/context/FinancialContextProvider";
 
 export const metadata: Metadata = {
   title: "FORE — Financial Foresight Engine",
   description:
     "PAST, DECIDE, AHEAD — one financial context, three linked views.",
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
@@ -17,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeGuard />
+        <PwaRegister />
         <FinancialContextProvider>{children}</FinancialContextProvider>
       </body>
     </html>

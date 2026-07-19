@@ -15,6 +15,7 @@ import { createSessionFromTransactions } from "@/lib/db/contextService";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import { getPersona } from "@/lib/data/personas";
 import { inferCityTier, inferIncomeBracket } from "@/lib/csv/parseBankCsv";
+import { clientKey, rateLimit } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,18 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ error: "DATABASE_URL not configured" }, { status: 503 });
+  }
+
+  const limited = await rateLimit({
+    key: clientKey(req, "auth-register"),
+    limit: 10,
+    windowMs: 60 * 60_000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many registration attempts" },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfterSec) } }
+    );
   }
 
   const body = await req.json().catch(() => null);

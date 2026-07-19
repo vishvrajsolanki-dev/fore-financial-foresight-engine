@@ -29,6 +29,11 @@ const nextConfig = {
               "form-action 'self'",
             ].join("; "),
           },
+          // HSTS only meaningful on HTTPS; browsers ignore it on localhost.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
         ],
       },
     ];
