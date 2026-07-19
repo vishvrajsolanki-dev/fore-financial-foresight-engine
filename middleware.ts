@@ -48,7 +48,11 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api/decide") ||
     pathname.startsWith("/api/transactions") ||
     pathname.startsWith("/api/account") ||
-    pathname.startsWith("/api/alerts");
+    pathname.startsWith("/api/alerts") ||
+    pathname.startsWith("/api/home") ||
+    pathname.startsWith("/api/merchants") ||
+    pathname.startsWith("/api/insights") ||
+    pathname.startsWith("/api/reports");
 
   if (!isProtected) {
     return NextResponse.next();

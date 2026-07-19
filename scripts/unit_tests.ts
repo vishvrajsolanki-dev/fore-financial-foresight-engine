@@ -10,6 +10,11 @@ import { detectRecurring } from "../lib/ml/recurring";
 import { classifyTransaction } from "../lib/ml/txnClassifier";
 import { transactionFingerprint, dedupeTransactions } from "../lib/ml/fingerprint";
 import { explainArchetype } from "../lib/ml/learnedArchetypes";
+import { buildHomePulse } from "../lib/home/pulse";
+import { aggregateMerchant, listMerchants } from "../lib/merchants/aggregate";
+import { buildWeeklyBrief } from "../lib/insights/weeklyBrief";
+import { buildReportPreview, transactionsToCsv } from "../lib/reports/builder";
+import { isPlanId, PLANS } from "../lib/billing/plans";
 import priya from "../data/personas/persona-priya.json";
 
 async function main() {
@@ -113,6 +118,54 @@ async function main() {
   if (!explained.topDrivers.length || explained.label !== "Disciplined Saver") {
     throw new Error(`explainArchetype ${explained.label}`);
   }
+
+  const pulse = buildHomePulse(
+    {
+      session_id: "x",
+      persona: "test",
+      monthly_income: 70000,
+      archetype: { label: "Disciplined Saver", distances: {} },
+      burn_rate: { daily_avg: 800, trend_slope: -50, projected_zero_balance_date: "2026-12-01" },
+      transactions: priya.transactions.slice(0, 5),
+      goal: { target_amount: 50000, target_date: "2026-12-31", on_pace: true, pace_gap_days: 10 },
+      last_decide_verdict: null,
+      benchmark: null,
+    },
+    { dataSource: "demo", alerts: [] }
+  );
+  if (pulse.archetypeLabel !== "Disciplined Saver" || pulse.balance == null) {
+    throw new Error("buildHomePulse");
+  }
+
+  const withMerchants = priya.transactions.map((t, i) => ({
+    ...t,
+    merchant: t.amount < 0 ? (i % 2 === 0 ? "Swiggy" : "Amazon") : undefined,
+  }));
+  const merchants = listMerchants(withMerchants);
+  if (!merchants.length) throw new Error("listMerchants");
+  const detail = aggregateMerchant(withMerchants, merchants[0].merchant);
+  if (!detail?.txnCount) throw new Error("aggregateMerchant");
+
+  const brief = buildWeeklyBrief({
+    session_id: "x",
+    persona: "test",
+    monthly_income: 70000,
+    archetype: { label: "Disciplined Saver", distances: {} },
+    burn_rate: { daily_avg: 800, trend_slope: -50, projected_zero_balance_date: "2026-12-01" },
+    transactions: withMerchants.slice(0, 20),
+    goal: { target_amount: 50000, target_date: "2026-12-31", on_pace: true, pace_gap_days: 10 },
+    last_decide_verdict: null,
+    benchmark: [{ category: "food", user_value: 3000, percentile: 40 }],
+  });
+  if (!brief.sections.length) throw new Error("buildWeeklyBrief");
+
+  const preview = buildReportPreview(withMerchants, {
+    metrics: ["spend_by_category", "transactions"],
+  });
+  if (!preview.summary.txnCount || !preview.byCategory.length) throw new Error("buildReportPreview");
+  if (!transactionsToCsv(preview.transactions).includes("date,")) throw new Error("transactionsToCsv");
+
+  if (!isPlanId("pro") || !PLANS.free) throw new Error("billing plans");
 
   console.log("  All unit checks OK");
 }

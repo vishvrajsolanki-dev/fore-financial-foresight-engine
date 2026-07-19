@@ -17,7 +17,8 @@
     "test:unit": "npx tsx scripts/unit_tests.ts",
     "test:csv": "npx tsx scripts/verify_real_csv.ts",
     "test:parity": "npx tsx scripts/ml_parity_test.ts",
-    "test:auth": "npx tsx scripts/auth_oauth_unit.ts"
+    "test:auth": "npx tsx scripts/auth_oauth_unit.ts",
+    "test:account-api": "npx tsx scripts/account_api_smoke.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

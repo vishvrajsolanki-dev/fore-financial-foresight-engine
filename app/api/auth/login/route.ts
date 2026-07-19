@@ -9,6 +9,7 @@ import {
   refreshTokenExpiry,
   signAccessToken,
 } from "@/lib/auth/jwt";
+import { ensureAccountExtras } from "@/lib/account/ensureAccountExtras";
 import { verifyPassword } from "@/lib/auth/password";
 import { hashToken } from "@/lib/security/encryption";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
@@ -81,19 +82,27 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  await ensureAccountExtras(user.id);
+
   const refreshRaw = generateRefreshTokenRaw();
   await prisma.refreshToken.create({
     data: {
       tokenHash: hashToken(refreshRaw),
       userId: user.id,
       expiresAt: refreshTokenExpiry(),
+      userAgent: req.headers.get("user-agent")?.slice(0, 240) ?? null,
     },
   });
 
   const accessToken = await signAccessToken({ sub: user.id, sid: sessionId });
 
   const res = NextResponse.json({
-    user: { id: user.id, email: user.email },
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
+    },
     sessionId,
   });
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));

@@ -1,5 +1,6 @@
 // FORE — PostgreSQL schema (FORE_Blueprint 2 §7)
 // User-scoped financial sessions; refresh tokens stored server-side for revocation.
+// Account/settings/billing models are additive — they do not alter ML/core finance logic.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,13 +12,15 @@ datasource db {
 }
 
 model User {
-  id                 String   @id @default(cuid())
-  email              String   @unique
-  passwordHash       String?  @map("password_hash")
-  provider           String   @default("email") // email | google | microsoft
-  providerAccountId  String?  @map("provider_account_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String?   @map("password_hash")
+  name              String?
+  provider          String    @default("email") // email | google | microsoft
+  providerAccountId String?   @map("provider_account_id")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   refreshTokens    RefreshToken[]
   sessions         FinancialSession[]
@@ -25,6 +28,9 @@ model User {
   categoryRules    CategoryRule[]
   statementUploads StatementUpload[]
   consent          UserConsent?
+  preferences      UserPreferences?
+  authTokens       AuthToken[]
+  subscription     Subscription?
 
   @@unique([provider, providerAccountId])
   @@map("users")
@@ -38,9 +44,56 @@ model RefreshToken {
   expiresAt DateTime  @map("expires_at")
   revokedAt DateTime? @map("revoked_at")
   createdAt DateTime  @default(now()) @map("created_at")
+  userAgent String?   @map("user_agent")
+  ipHint    String?   @map("ip_hint")
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model AuthToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // email_verify | password_reset
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, type])
+  @@map("auth_tokens")
+}
+
+model UserPreferences {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appearance      String   @default("light") // light | evening
+  emailProduct    Boolean  @default(true) @map("email_product")
+  emailSecurity   Boolean  @default(true) @map("email_security")
+  emailMarketing  Boolean  @default(false) @map("email_marketing")
+  inAppAlerts     Boolean  @default(true) @map("in_app_alerts")
+  weeklyBrief     Boolean  @default(true) @map("weekly_brief")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("user_preferences")
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique @map("user_id")
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 String    @default("free") // free | pro | business
+  status               String    @default("active") // active | canceled | past_due | trialing
+  currentPeriodEnd     DateTime? @map("current_period_end")
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  stripeCustomerId     String?   @map("stripe_customer_id")
+  stripeSubscriptionId String?   @map("stripe_subscription_id")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  @@map("subscriptions")
 }
 
 model FinancialSession {
@@ -63,9 +116,9 @@ model FinancialSession {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  transactions      Transaction[]
-  conversations     Conversation[]
-  statementUploads  StatementUpload[]
+  transactions     Transaction[]
+  conversations    Conversation[]
+  statementUploads StatementUpload[]
 
   @@index([userId, isActive])
   @@map("financial_sessions")
@@ -81,7 +134,7 @@ model Transaction {
   descriptionEnc String?          @map("description_enc")
   merchant       String?
   confidence     Float?
-  source         String?          // parser | user | rule
+  source         String? // parser | user | rule
   fingerprint    String?
   statementId    String?          @map("statement_id")
   statement      StatementUpload? @relation(fields: [statementId], references: [id], onDelete: SetNull)
@@ -93,15 +146,15 @@ model Transaction {
 }
 
 model Conversation {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionId String   @map("session_id")
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String           @map("session_id")
   session   FinancialSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   title     String?
-  summary   String?  @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  summary   String?          @db.Text
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
 
   messages ConversationMessage[]
 
@@ -137,14 +190,14 @@ model CategoryRule {
 }
 
 model StatementUpload {
-  id        String   @id @default(cuid())
-  sessionId String   @map("session_id")
-  session   FinancialSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileName  String   @map("file_name")
-  uploadedAt DateTime @default(now()) @map("uploaded_at")
-  rowCount  Int      @map("row_count")
+  id         String           @id @default(cuid())
+  sessionId  String           @map("session_id")
+  session    FinancialSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId     String           @map("user_id")
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName   String           @map("file_name")
+  uploadedAt DateTime         @default(now()) @map("uploaded_at")
+  rowCount   Int              @map("row_count")
 
   transactions Transaction[]
 
