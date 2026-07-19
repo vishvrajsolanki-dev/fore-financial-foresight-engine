@@ -12,17 +12,30 @@ import type { FinancialContext, Transaction } from "@/types/financialContext";
 
 type PastData = Pick<FinancialContext, "archetype" | "burn_rate">;
 
+async function readJson(res: Response): Promise<Record<string, unknown>> {
+  const text = await res.text();
+  if (!text.trim()) return {};
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    credentials: "include",
   });
+  const j = await readJson(res);
   if (!res.ok) {
-    const j = await res.json().catch(() => ({}));
-    throw new Error(j.error || `${path} failed (${res.status})`);
+    throw new Error(
+      (typeof j.error === "string" && j.error) || `${path} failed (${res.status})`
+    );
   }
-  return res.json() as Promise<T>;
+  return j as T;
 }
 
 export async function getPastData(

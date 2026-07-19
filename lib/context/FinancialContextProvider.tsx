@@ -126,8 +126,22 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        if (!text.trim()) return null;
+        try {
+          return JSON.parse(text) as {
+            database?: boolean;
+            authenticated?: boolean;
+            user?: AuthUser;
+            context?: FinancialContext;
+          };
+        } catch {
+          return null;
+        }
+      })
       .then((data) => {
+        if (!data) return;
         setFullStackEnabled(!!data.database);
         if (data.authenticated && data.user) {
           setAuthUser(data.user);
@@ -187,8 +201,10 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
             credentials: "include",
             body: JSON.stringify({ personaId: sessionId }),
           });
-          const data = await res.json();
+          const text = await res.text();
+          const data = text.trim() ? (JSON.parse(text) as { error?: string; context?: FinancialContext }) : {};
           if (!res.ok) throw new Error(data.error || "Failed to load persona");
+          if (!data.context) throw new Error("Persona loaded but context was empty");
           setCtx(data.context);
           setActiveId(data.context.session_id);
         } catch (err) {
@@ -264,8 +280,23 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
           body: form,
           credentials: "include",
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data: { error?: string; context?: FinancialContext; meta?: CsvUploadMeta } = {};
+        if (text.trim()) {
+          try {
+            data = JSON.parse(text) as typeof data;
+          } catch {
+            throw new Error(
+              res.ok
+                ? "Upload returned invalid JSON"
+                : `Upload failed (${res.status})`
+            );
+          }
+        } else if (!res.ok) {
+          throw new Error(`Upload failed (${res.status})`);
+        }
         if (!res.ok) throw new Error(data.error || "Upload failed");
+        if (!data.context) throw new Error("Upload succeeded but no context returned");
         setCtx(data.context);
         setActiveId(data.context.session_id);
         return data.meta as CsvUploadMeta;
