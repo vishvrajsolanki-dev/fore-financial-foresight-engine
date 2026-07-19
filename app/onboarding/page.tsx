@@ -10,7 +10,8 @@ import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
  */
 export default function OnboardingPage() {
   const { loadSampleStatement, uploadCsv, pastLoading, activeId } = useFinancialContext();
-  const [step, setStep] = useState<"welcome" | "choose" | "done">(activeId ? "done" : "welcome");
+  // Skip sparse welcome — go straight to equal Upload / Demo (U3)
+  const [step, setStep] = useState<"choose" | "done">(activeId ? "done" : "choose");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [income, setIncome] = useState("60000");
@@ -62,22 +63,10 @@ export default function OnboardingPage() {
           F<span style={{ color: "var(--accent)" }}>O</span>RE
         </Link>
 
-        {step === "welcome" && (
-          <div className="mt-16 rise-in max-w-xl">
-            <h1 className="display text-4xl sm:text-5xl">Welcome to foresight</h1>
-            <p className="muted mt-4 text-lg">
-              One step. Connect a bank CSV — or explore with demo data. Same product either way.
-            </p>
-            <button className="btn mt-8" type="button" onClick={() => setStep("choose")}>
-              Continue
-            </button>
-          </div>
-        )}
-
         {step === "choose" && (
           <div className="mt-12 rise-in">
             <h1 className="display text-3xl mb-2">How do you want to start?</h1>
-            <p className="muted mb-8">Two equal paths. Pick one.</p>
+            <p className="muted mb-8">Upload a bank CSV or try demo data — same product either way.</p>
 
             <div className="grid md:grid-cols-2 gap-6 items-stretch">
               <div className="card flex flex-col">

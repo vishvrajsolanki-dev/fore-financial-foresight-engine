@@ -17,7 +17,7 @@ function HeroProductVisual() {
           </div>
           <div className="mkt-hero-kpi">
             <small>Runway</small>
-            <b> thr 2026</b>
+            <b>Nov 2026</b>
           </div>
           <div className="mkt-hero-chart">
             <svg viewBox="0 0 240 80" width="100%" height="80" preserveAspectRatio="none">
