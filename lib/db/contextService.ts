@@ -202,6 +202,8 @@ export async function computeAndPersistPast(
   await prisma.financialSession.update({
     where: { id: sessionId },
     data: {
+      // Persona label = assigned archetype (RupeeIQ model — never user-selected).
+      persona: `Assigned: ${past.archetype.label}`,
       archetypeLabel: past.archetype.label,
       archetypeDistances: past.archetype.distances,
       burnRate: past.burn_rate,

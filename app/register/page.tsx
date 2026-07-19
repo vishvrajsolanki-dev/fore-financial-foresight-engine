@@ -4,14 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-import { PERSONAS } from "@/lib/data/personas";
-
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [demoPersonaId, setDemoPersonaId] = useState(PERSONAS[0]?.session_id ?? "");
-  const [useDemo, setUseDemo] = useState(true);
+  const [monthlyIncome, setMonthlyIncome] = useState("60000");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,14 +17,14 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
+      const income = Number(monthlyIncome);
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
           password,
-          demoPersonaId: useDemo ? demoPersonaId : undefined,
-          monthlyIncome: useDemo ? undefined : 60000,
+          monthlyIncome: Number.isFinite(income) && income > 0 ? income : 60000,
         }),
         credentials: "include",
       });
@@ -56,8 +53,8 @@ export default function RegisterPage() {
         </p>
         <h1 className="mt-3 text-2xl font-bold tracking-tight">Create your account</h1>
         <p className="muted mt-1 text-sm">
-          JWT auth, PostgreSQL persistence, optional real bank CSV import. Passwords are
-          bcrypt-hashed; financial data never goes inside JWT tokens.
+          After you upload a bank CSV on PAST, FORE assigns your spending archetype from the data
+          (nearest of 5 centroids) — you never pick a personality.
         </p>
 
         <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
@@ -86,28 +83,17 @@ export default function RegisterPage() {
               required
             />
           </label>
-
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={useDemo} onChange={(e) => setUseDemo(e.target.checked)} />
-            Start with a demo persona (recommended for first login)
+          <label className="grid gap-1">
+            <span className="muted text-xs font-semibold">Monthly income (₹) — for ratios</span>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              value={monthlyIncome}
+              onChange={(e) => setMonthlyIncome(e.target.value)}
+              required
+            />
           </label>
-
-          {useDemo && (
-            <label className="grid gap-1">
-              <span className="muted text-xs font-semibold">Demo persona</span>
-              <select
-                className="input"
-                value={demoPersonaId}
-                onChange={(e) => setDemoPersonaId(e.target.value)}
-              >
-                {PERSONAS.map((p) => (
-                  <option key={p.session_id} value={p.session_id}>
-                    {p.persona}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
 
           {error && (
             <p className="text-sm" style={{ color: "var(--danger)" }}>

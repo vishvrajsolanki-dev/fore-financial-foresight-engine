@@ -55,7 +55,10 @@ interface FinancialContextValue {
   authUser: AuthUser | null;
   currency: CurrencyCode;
   setCurrency: (c: CurrencyCode) => void;
+  /** @deprecated Prefer loadSampleStatement — archetypes are assigned, not selected. */
   selectPersona: (sessionId: string) => Promise<void>;
+  /** Load one sample ledger, then assign archetype from its spend mix. */
+  loadSampleStatement: () => Promise<void>;
   setGoal: (targetAmount: number, targetDate: string) => void;
   applyDecideVerdict: (verdict: DecideVerdict) => void;
   uploadCsv: (file: File, monthlyIncome: number, cityTier: string) => Promise<CsvUploadMeta>;
@@ -176,7 +179,15 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       );
       setCtx((prev) =>
         prev && prev.session_id === sessionId
-          ? { ...prev, archetype: past.archetype, burn_rate: past.burn_rate, benchmark }
+          ? {
+              ...prev,
+              persona: past.archetype?.label
+                ? `Assigned: ${past.archetype.label}`
+                : prev.persona,
+              archetype: past.archetype,
+              burn_rate: past.burn_rate,
+              benchmark,
+            }
           : prev
       );
     } catch (err) {
@@ -202,13 +213,19 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
             body: JSON.stringify({ personaId: sessionId }),
           });
           const text = await res.text();
-          const data = text.trim() ? (JSON.parse(text) as { error?: string; context?: FinancialContext }) : {};
-          if (!res.ok) throw new Error(data.error || "Failed to load persona");
-          if (!data.context) throw new Error("Persona loaded but context was empty");
-          setCtx(data.context);
+          const data = text.trim()
+            ? (JSON.parse(text) as { error?: string; context?: FinancialContext })
+            : {};
+          if (!res.ok) throw new Error(data.error || "Failed to load sample");
+          if (!data.context) throw new Error("Sample loaded but context was empty");
+          const label = data.context.archetype?.label;
+          setCtx({
+            ...data.context,
+            persona: label ? `Assigned: ${label}` : "Sample statement",
+          });
           setActiveId(data.context.session_id);
         } catch (err) {
-          setPastError(err instanceof Error ? err.message : "Failed to load persona");
+          setPastError(err instanceof Error ? err.message : "Failed to load sample");
         } finally {
           setPastLoading(false);
         }
@@ -219,6 +236,13 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
     },
     [authUser, fullStackEnabled, loadClientPersona]
   );
+
+  const loadSampleStatement = useCallback(async () => {
+    // Single sample ledger — archetype still assigned by classify(), never chosen.
+    const sampleId = PERSONAS[0]?.session_id;
+    if (!sampleId) throw new Error("No sample statement available");
+    await selectPersona(sampleId);
+  }, [selectPersona]);
 
   const uploadCsv = useCallback(
     async (file: File, monthlyIncome: number, cityTier: string): Promise<CsvUploadMeta> => {
@@ -250,7 +274,15 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
           );
           setCtx((prev) =>
             prev && prev.session_id === sessionId
-              ? { ...prev, archetype: past.archetype, burn_rate: past.burn_rate, benchmark }
+              ? {
+                  ...prev,
+                  persona: past.archetype?.label
+                    ? `Assigned: ${past.archetype.label}`
+                    : "Your CSV upload",
+                  archetype: past.archetype,
+                  burn_rate: past.burn_rate,
+                  benchmark,
+                }
               : prev
           );
           return {
@@ -297,7 +329,11 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
         }
         if (!res.ok) throw new Error(data.error || "Upload failed");
         if (!data.context) throw new Error("Upload succeeded but no context returned");
-        setCtx(data.context);
+        const label = data.context.archetype?.label;
+        setCtx({
+          ...data.context,
+          persona: label ? `Assigned: ${label}` : data.context.persona,
+        });
         setActiveId(data.context.session_id);
         return data.meta as CsvUploadMeta;
       } finally {
@@ -381,6 +417,7 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       currency,
       setCurrency,
       selectPersona,
+      loadSampleStatement,
       setGoal,
       applyDecideVerdict,
       uploadCsv,
@@ -395,6 +432,7 @@ export function FinancialContextProvider({ children }: { children: ReactNode }) 
       authUser,
       currency,
       selectPersona,
+      loadSampleStatement,
       setGoal,
       applyDecideVerdict,
       uploadCsv,

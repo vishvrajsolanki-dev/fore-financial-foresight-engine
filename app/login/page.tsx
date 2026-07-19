@@ -34,9 +34,9 @@ function MicrosoftIcon() {
 
 const FEATURES = [
   {
-    title: "PAST — know your archetype",
+    title: "PAST — archetype assigned",
     blurb:
-      "Your spending matched to one of five archetypes, with burn-rate trend and a zero-balance projection.",
+      "We assign one of five archetypes from your spend mix (Euclidean nearest centroid) — you never pick a persona.",
     icon: (
       <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M3 3v18h18" />
