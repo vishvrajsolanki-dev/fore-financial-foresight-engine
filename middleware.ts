@@ -2,7 +2,20 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/login", "/register", "/docs", "/api/auth", "/_next", "/favicon"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/features",
+  "/pricing",
+  "/about",
+  "/docs",
+  "/api/auth",
+  "/_next",
+  "/favicon",
+];
 
 function accessSecret(): Uint8Array {
   const s = process.env.JWT_ACCESS_SECRET?.trim();

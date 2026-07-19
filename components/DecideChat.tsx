@@ -51,15 +51,17 @@ function formatToolTrace(trace: ChatMsg["toolTrace"]): string {
 }
 
 export default function DecideChat() {
-  const { ctx, applyDecideVerdict, fullStackEnabled } = useFinancialContext();
+  const { ctx, applyDecideVerdict, fullStackEnabled, currency } = useFinancialContext();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [slow, setSlow] = useState(false);
   const [listening, setListening] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [contextOpen, setContextOpen] = useState(false);
   const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionId = ctx?.session_id ?? null;
+  const balance = ctx?.transactions?.reduce((s, t) => s + t.amount, 0) ?? null;
 
   useEffect(() => {
     setMessages([]);
@@ -230,16 +232,24 @@ export default function DecideChat() {
   }
 
   return (
-    <div className="grid gap-4">
-      <FaceIntro
-        face="DECIDE"
-        title="Ask if you can afford something — I run the real numbers."
-        blurb="Every affordability answer comes from a live canIAfford() function call, never a guessed number."
-      />
+    <div className="grid gap-4 max-w-3xl mx-auto w-full">
+      <div className="flex items-start justify-between gap-3">
+        <FaceIntro
+          face="DECIDE"
+          title="Ask if you can afford something — I run the real numbers."
+          blurb="Every affordability answer comes from a live canIAfford() function call, never a guessed number."
+        />
+        <button type="button" className="btn-ghost btn text-sm shrink-0" onClick={() => setContextOpen(true)}>
+          Context
+        </button>
+      </div>
 
       <div className="card min-h-[16rem]">
         {messages.length === 0 ? (
-          <p className="muted text-sm">No questions yet. Try one of the suggestions below.</p>
+          <div className="py-6">
+            <p className="display text-xl">What are you deciding?</p>
+            <p className="muted text-sm mt-2">Try a suggestion below — answers stay grounded in your data.</p>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {messages.map((m, i) => (
@@ -339,6 +349,52 @@ export default function DecideChat() {
           Ask
         </button>
       </form>
+
+      {contextOpen && (
+        <>
+          <button
+            type="button"
+            className="decide-drawer-backdrop"
+            aria-label="Close context"
+            onClick={() => setContextOpen(false)}
+          />
+          <aside className="decide-drawer" aria-label="Financial context">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="display text-xl">Context</h2>
+              <button type="button" className="btn-ghost btn text-sm" onClick={() => setContextOpen(false)}>
+                Close
+              </button>
+            </div>
+            <dl className="grid gap-4 text-sm">
+              <div>
+                <dt className="muted text-xs uppercase font-semibold">Balance</dt>
+                <dd className="tabular text-lg font-semibold mt-1">
+                  {balance != null ? balance.toLocaleString() : "—"} {currency}
+                </dd>
+              </div>
+              <div>
+                <dt className="muted text-xs uppercase font-semibold">Daily burn</dt>
+                <dd className="tabular text-lg font-semibold mt-1">
+                  {ctx?.burn_rate?.daily_avg != null ? ctx.burn_rate.daily_avg.toLocaleString() : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="muted text-xs uppercase font-semibold">Runway date</dt>
+                <dd className="text-lg font-semibold mt-1">
+                  {ctx?.burn_rate?.projected_zero_balance_date ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="muted text-xs uppercase font-semibold">Archetype</dt>
+                <dd className="text-lg font-semibold mt-1">{ctx?.archetype?.label ?? "—"}</dd>
+              </div>
+            </dl>
+            {!fullStackEnabled && (
+              <p className="muted text-xs mt-6">Demo mode — context from your local session.</p>
+            )}
+          </aside>
+        </>
+      )}
     </div>
   );
 }

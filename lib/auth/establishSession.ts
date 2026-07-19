@@ -85,7 +85,7 @@ export async function completeOAuthLogin(identity: OAuthIdentity, nextPath: stri
   });
 
   const accessToken = await signAccessToken({ sub: user.id, sid: sessionId });
-  const dest = nextPath.startsWith("/") ? nextPath : "/past";
+  const dest = nextPath.startsWith("/") ? nextPath : "/home";
   const base = process.env.AUTH_REDIRECT_BASE?.trim() || "http://localhost:3000";
   const res = NextResponse.redirect(new URL(dest, base));
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));
