@@ -20,6 +20,7 @@ export const dynamic = "force-dynamic";
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
+  try {
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ error: "DATABASE_URL not configured" }, { status: 503 });
   }
@@ -164,4 +165,8 @@ export async function POST(req: NextRequest) {
   });
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));
   return res;
+  } catch (err) {
+    console.error("CSV upload error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "CSV upload failed" }, { status: 500 });
+  }
 }
