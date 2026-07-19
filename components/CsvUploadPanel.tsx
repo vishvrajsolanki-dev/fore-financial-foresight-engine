@@ -1,19 +1,14 @@
 "use client";
 
-// FORE — components/CsvUploadPanel.tsx
-// CSV entry point on PAST. Full-stack mode posts to /api/upload/csv (encrypted,
-// persisted). Demo mode parses the file in the browser and runs the same ML calls
-// the personas use — the sign-in → upload → dashboard flow works without a DB.
-
 import { useRef, useState, type DragEvent } from "react";
 import { useFinancialContext } from "@/lib/context/FinancialContextProvider";
 
-export default function CsvUploadPanel() {
-  const { fullStackEnabled, authUser, uploadCsv, pastLoading, activeId, loadSampleStatement } =
+/** Clean statement upload — product copy only (no ML jargon). */
+export default function CsvUploadPanel({ compact = false }: { compact?: boolean }) {
+  const { fullStackEnabled, authUser, uploadCsv, pastLoading, loadSampleStatement } =
     useFinancialContext();
   const [income, setIncome] = useState("60000");
   const [cityTier, setCityTier] = useState("Tier 2");
-  const [fileName, setFileName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -31,11 +26,7 @@ export default function CsvUploadPanel() {
     }
     try {
       const meta = await uploadCsv(file, monthlyIncome, cityTier);
-      setSuccess(
-        `Imported ${meta.rowCount} transactions (${meta.detectedFormat}).` +
-          (meta.warnings.length ? ` Note: ${meta.warnings[0]}` : "")
-      );
-      setFileName(null);
+      setSuccess(`Imported ${meta.rowCount} transactions.`);
       if (fileRef.current) fileRef.current.value = "";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -46,35 +37,28 @@ export default function CsvUploadPanel() {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      setFileName(file.name);
-      void analyse(file);
-    }
+    if (file) void analyse(file);
   }
 
   return (
-    <div className={`card ${activeId ? "" : "rise-in"}`}>
-      <p className="muted text-sm">{demoMode ? "Bring your statement" : "Real bank data"}</p>
-      <p className="mt-1 font-semibold">Upload your bank statement CSV</p>
+    <div className="card rise-in">
+      <p className="font-semibold">{compact ? "Replace statement" : "Upload bank statement"}</p>
       <p className="muted mt-1 text-sm">
-        Your archetype is <strong>assigned</strong> from spending patterns (Euclidean nearest of 5
-        centroids) — you don&apos;t pick a personality. Supports HDFC, ICICI, SBI, and Kotak
-        exports.{" "}
+        Drop a CSV export. We assign your spending profile from the patterns in the file.
         {demoMode
-          ? "Parsed in your browser — transactions are sent only to the analysis service, never stored."
-          : "Raw CSV is never stored — only normalized transactions with encrypted descriptions."}
+          ? " Demo mode analyses in your browser."
+          : " Descriptions are encrypted at rest."}
       </p>
 
       <div
         role="button"
         tabIndex={0}
         aria-label="Drop your CSV here or click to browse"
-        className="mt-4 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-all duration-200"
+        className="mt-4 rounded-xl border-2 border-dashed px-6 py-8 text-center"
         style={{
           borderColor: dragOver ? "var(--accent)" : "var(--border)",
-          background: dragOver ? "rgba(222, 91, 50, 0.06)" : "transparent",
-          transform: dragOver ? "scale(1.01)" : undefined,
-          cursor: pastLoading ? "default" : "pointer",
+          background: dragOver ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "var(--input-bg)",
+          cursor: pastLoading ? "wait" : "pointer",
         }}
         onClick={() => !pastLoading && fileRef.current?.click()}
         onKeyDown={(e) => {
@@ -91,45 +75,14 @@ export default function CsvUploadPanel() {
           ref={fileRef}
           className="hidden"
           type="file"
-          name="csvfile"
           accept=".csv,text/csv"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) {
-              setFileName(file.name);
-              void analyse(file);
-            }
+            if (file) void analyse(file);
           }}
         />
-        {pastLoading ? (
-          <div className="rise-in">
-            {fileName && <span className="pill">{fileName}</span>}
-            <p className="mt-3 text-sm font-medium">Analysing your transactions…</p>
-            <p className="muted mt-1 text-xs">Parsing rows · classifying archetype · fitting burn-rate trend</p>
-          </div>
-        ) : (
-          <>
-            <svg
-              className="mx-auto"
-              viewBox="0 0 24 24"
-              width="40"
-              height="40"
-              fill="none"
-              stroke="var(--accent)"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <path d="M14 2v6h6" />
-              <path d="M12 18v-6" />
-              <path d="m9 15 3-3 3 3" />
-            </svg>
-            <p className="mt-2 text-sm font-semibold">Drag &amp; drop your CSV here</p>
-            <p className="muted mt-1 text-xs">or click to browse</p>
-          </>
-        )}
+        <p className="text-sm font-semibold">{pastLoading ? "Analysing…" : "Drag & drop CSV"}</p>
+        <p className="muted mt-1 text-xs">or click to browse · HDFC, ICICI, SBI, Kotak</p>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -141,7 +94,6 @@ export default function CsvUploadPanel() {
             min={1}
             value={income}
             onChange={(e) => setIncome(e.target.value)}
-            required
           />
         </label>
         <label className="grid gap-1">
@@ -154,28 +106,26 @@ export default function CsvUploadPanel() {
         </label>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="btn-ghost text-xs px-3 py-1.5"
-          disabled={pastLoading}
-          onClick={async () => {
-            setError(null);
-            setSuccess(null);
-            try {
-              await loadSampleStatement();
-              setSuccess(
-                "Sample statement loaded — archetype assigned from its spending mix (not chosen)."
-              );
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not load sample");
-            }
-          }}
-        >
-          Try sample statement
-        </button>
-        <span className="muted text-xs">Optional — still runs the same assignment math</span>
-      </div>
+      {!compact && (
+        <div className="mt-4">
+          <button
+            type="button"
+            className="btn-ghost btn text-sm"
+            disabled={pastLoading}
+            onClick={async () => {
+              setError(null);
+              try {
+                await loadSampleStatement();
+                setSuccess("Demo statement loaded.");
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Could not load sample");
+              }
+            }}
+          >
+            Use demo data instead
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="mt-3 text-sm" style={{ color: "var(--danger)" }}>
@@ -183,8 +133,8 @@ export default function CsvUploadPanel() {
         </p>
       )}
       {success && (
-        <p className="rise-in mt-3 text-sm" style={{ color: "var(--accent-2)" }}>
-          ✓ {success}
+        <p className="mt-3 text-sm" style={{ color: "var(--positive)" }}>
+          {success}
         </p>
       )}
     </div>

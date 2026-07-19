@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const state = req.nextUrl.searchParams.get("state");
   const storedState = req.cookies.get("fore_oauth_state")?.value;
   const codeVerifier = req.cookies.get("fore_oauth_verifier")?.value;
-  const next = req.cookies.get("fore_oauth_next")?.value || "/home";
+  const next = req.cookies.get("fore_oauth_next")?.value || "/past";
 
   if (!code || !state || !storedState || !codeVerifier || state !== storedState) {
     return NextResponse.redirect(new URL("/login?error=oauth_state", req.url));
