@@ -23,9 +23,13 @@ export async function GET(req: NextRequest) {
     select: {
       id: true,
       email: true,
+      name: true,
       provider: true,
+      emailVerifiedAt: true,
       createdAt: true,
       consent: true,
+      preferences: true,
+      subscription: true,
       sessions: {
         where: { isActive: true },
         take: 1,
@@ -58,10 +62,21 @@ export async function GET(req: NextRequest) {
     user: {
       id: user.id,
       email: user.email,
+      name: user.name,
       provider: user.provider,
+      emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       createdAt: user.createdAt.toISOString(),
     },
     consent: user.consent,
+    preferences: user.preferences,
+    subscription: user.subscription
+      ? {
+          plan: user.subscription.plan,
+          status: user.subscription.status,
+          currentPeriodEnd: user.subscription.currentPeriodEnd?.toISOString() ?? null,
+          cancelAtPeriodEnd: user.subscription.cancelAtPeriodEnd,
+        }
+      : null,
     session: ctx,
     transactions: transactions.map((t) => ({
       date: t.date,

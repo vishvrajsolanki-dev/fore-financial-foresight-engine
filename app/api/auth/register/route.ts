@@ -9,7 +9,10 @@ import {
   refreshTokenExpiry,
   signAccessToken,
 } from "@/lib/auth/jwt";
+import { ensureAccountExtras } from "@/lib/account/ensureAccountExtras";
 import { hashPassword } from "@/lib/auth/password";
+import { issueAuthToken } from "@/lib/auth/tokens";
+import { appBaseUrl, sendEmail } from "@/lib/email/send";
 import { hashToken } from "@/lib/security/encryption";
 import { createSessionFromTransactions } from "@/lib/db/contextService";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
@@ -62,6 +65,7 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.create({
     data: { email: email.toLowerCase(), passwordHash, provider: "email" },
   });
+  await ensureAccountExtras(user.id);
 
   let sessionId: string;
   if (demoPersonaId) {
@@ -109,9 +113,18 @@ export async function POST(req: NextRequest) {
 
   const accessToken = await signAccessToken({ sub: user.id, sid: sessionId });
 
+  const verifyRaw = await issueAuthToken(user.id, "email_verify");
+  const verifyLink = `${appBaseUrl()}/verify-email?token=${encodeURIComponent(verifyRaw)}`;
+  const mail = await sendEmail({
+    to: user.email,
+    subject: "Verify your FORE email",
+    text: `Verify your email (expires in 24 hours):\n\n${verifyLink}\n`,
+  });
+
   const res = NextResponse.json({
-    user: { id: user.id, email: user.email },
+    user: { id: user.id, email: user.email, name: null, emailVerifiedAt: null },
     sessionId,
+    ...(mail.preview ? { devVerifyToken: verifyRaw, devVerifyLink: verifyLink } : {}),
   });
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));
   res.cookies.set(COOKIE_REFRESH, refreshRaw, cookieOptions(7 * 24 * 60 * 60));

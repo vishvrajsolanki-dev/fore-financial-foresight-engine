@@ -1,125 +1,73 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import AuthShell from "@/components/auth/AuthShell";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [monthlyIncome, setMonthlyIncome] = useState("60000");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setBusy(true);
     setError(null);
     try {
-      const income = Number(monthlyIncome);
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          monthlyIncome: Number.isFinite(income) && income > 0 ? income : 60000,
-        }),
-        credentials: "include",
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
-        const msg =
-          typeof data.error === "string"
-            ? data.error
-            : JSON.stringify(data.error) || "Registration failed";
-        throw new Error(msg);
+        throw new Error(typeof data.error === "string" ? data.error : "Registration failed");
       }
-      router.push("/past");
+      router.push("/onboarding");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
   return (
-    <div className="auth-grain relative min-h-screen">
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10 sm:py-14">
-      <div className="card rise-in p-7 sm:p-8">
-        <p className="fore-brand text-3xl">
-          F<span style={{ color: "var(--accent)" }}>O</span>RE
-        </p>
-        <h1 className="display mt-3 text-2xl">Create your account</h1>
-        <p className="muted mt-1 text-sm">
-          After you upload a bank CSV on PAST, FORE assigns your spending archetype from the data
-          (nearest of 5 centroids) — you never pick a personality.
-        </p>
-
-        <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
-          <label className="grid gap-1">
-            <span className="muted text-xs font-semibold">Email</span>
-            <input
-              className="input"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="muted text-xs font-semibold">Password (min 8 characters)</span>
-            <input
-              className="input"
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="muted text-xs font-semibold">Monthly income (₹) — for ratios</span>
-            <input
-              className="input"
-              type="number"
-              min={1}
-              value={monthlyIncome}
-              onChange={(e) => setMonthlyIncome(e.target.value)}
-              required
-            />
-          </label>
-
-          {error && (
-            <p className="text-sm" style={{ color: "var(--danger)" }}>
-              {error}
-            </p>
-          )}
-          <button className="btn btn-shine mt-1" type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <span className="spinner" /> Creating account…
-              </>
-            ) : (
-              "Create account"
-            )}
-          </button>
-        </form>
-
-        <p className="muted mt-5 text-center text-sm">
-          Already registered?{" "}
-          <Link href="/login" className="underline">
-            Log in
+    <AuthShell
+      title="Create account"
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/login" style={{ color: "var(--accent)" }}>
+            Sign in
           </Link>
-        </p>
-      </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="grid gap-3">
+        <label className="grid gap-1 text-sm">
+          Email
+          <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label className="grid gap-1 text-sm">
+          Password
+          <input
+            className="input"
+            type="password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+        {error && <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>}
+        <button className="btn w-full" disabled={busy}>
+          {busy ? "Creating…" : "Create account"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ensureAccountExtras } from "@/lib/account/ensureAccountExtras";
 import { getAuthFromCookies } from "@/lib/auth/session";
 import { sessionToContext } from "@/lib/db/contextService";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
@@ -19,7 +20,14 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: auth.sub },
-    select: { id: true, email: true, createdAt: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      provider: true,
+      emailVerifiedAt: true,
+      createdAt: true,
+    },
   });
   if (!user) {
     return NextResponse.json({ authenticated: false, database: true });
@@ -34,6 +42,12 @@ export async function GET() {
     return NextResponse.json({ authenticated: false, database: true });
   }
 
+  await ensureAccountExtras(auth.sub);
+  const [preferences, subscription] = await Promise.all([
+    prisma.userPreferences.findUnique({ where: { userId: auth.sub } }),
+    prisma.subscription.findUnique({ where: { userId: auth.sub } }),
+  ]);
+
   // Skip description decrypt on hydrate — charts/ML don't need narrations.
   const ctx = await sessionToContext(auth.sid, {
     userId: auth.sub,
@@ -43,7 +57,34 @@ export async function GET() {
   return NextResponse.json({
     authenticated: true,
     database: true,
-    user,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      provider: user.provider,
+      emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
+      createdAt: user.createdAt,
+    },
+    preferences: preferences
+      ? {
+          appearance: preferences.appearance,
+          notifications: {
+            emailProduct: preferences.emailProduct,
+            emailSecurity: preferences.emailSecurity,
+            emailMarketing: preferences.emailMarketing,
+            inAppAlerts: preferences.inAppAlerts,
+            weeklyBrief: preferences.weeklyBrief,
+          },
+        }
+      : null,
+    subscription: subscription
+      ? {
+          plan: subscription.plan,
+          status: subscription.status,
+          currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        }
+      : null,
     sessionId: auth.sid,
     context: ctx,
   });

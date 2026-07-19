@@ -6,6 +6,7 @@ import {
   refreshTokenExpiry,
   signAccessToken,
 } from "@/lib/auth/jwt";
+import { ensureAccountExtras } from "@/lib/account/ensureAccountExtras";
 import { hashToken } from "@/lib/security/encryption";
 import { createSessionFromTransactions } from "@/lib/db/contextService";
 import { prisma } from "@/lib/db/prisma";
@@ -56,6 +57,8 @@ export async function completeOAuthLogin(identity: OAuthIdentity, nextPath: stri
         passwordHash: null,
         provider: identity.provider,
         providerAccountId: identity.providerAccountId,
+        emailVerifiedAt: identity.emailVerified ? new Date() : null,
+        name: identity.name ?? null,
       },
     });
   } else if (!user.providerAccountId) {
@@ -64,10 +67,13 @@ export async function completeOAuthLogin(identity: OAuthIdentity, nextPath: stri
       data: {
         provider: identity.provider,
         providerAccountId: identity.providerAccountId,
+        emailVerifiedAt: user.emailVerifiedAt ?? (identity.emailVerified ? new Date() : null),
+        name: user.name ?? identity.name ?? null,
       },
     });
   }
 
+  await ensureAccountExtras(user.id);
   const sessionId = await ensureActiveSession(user.id);
   const refreshRaw = generateRefreshTokenRaw();
   await prisma.refreshToken.create({
@@ -79,7 +85,7 @@ export async function completeOAuthLogin(identity: OAuthIdentity, nextPath: stri
   });
 
   const accessToken = await signAccessToken({ sub: user.id, sid: sessionId });
-  const dest = nextPath.startsWith("/") ? nextPath : "/past";
+  const dest = nextPath.startsWith("/") ? nextPath : "/home";
   const base = process.env.AUTH_REDIRECT_BASE?.trim() || "http://localhost:3000";
   const res = NextResponse.redirect(new URL(dest, base));
   res.cookies.set(COOKIE_ACCESS, accessToken, cookieOptions(15 * 60));

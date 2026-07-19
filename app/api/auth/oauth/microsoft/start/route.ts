@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=microsoft_not_configured", req.url));
   }
 
-  const next = req.nextUrl.searchParams.get("next") || "/past";
+  const next = req.nextUrl.searchParams.get("next") || "/home";
   const { state, codeVerifier } = newOAuthState();
   const ms = createMicrosoftClient();
   const url = ms.createAuthorizationURL(state, codeVerifier, ["openid", "profile", "email", "User.Read"]);
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const opts = oauthCookieOptions();
   res.cookies.set("fore_oauth_state", state, opts);
   res.cookies.set("fore_oauth_verifier", codeVerifier, opts);
-  res.cookies.set("fore_oauth_next", next.startsWith("/") ? next : "/past", opts);
+  res.cookies.set("fore_oauth_next", next.startsWith("/") ? next : "/home", opts);
   res.cookies.set("fore_oauth_provider", "microsoft", opts);
   return res;
 }

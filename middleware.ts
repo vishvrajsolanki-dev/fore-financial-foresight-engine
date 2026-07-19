@@ -2,7 +2,20 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/login", "/register", "/docs", "/api/auth", "/_next", "/favicon"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/features",
+  "/pricing",
+  "/about",
+  "/docs",
+  "/api/auth",
+  "/_next",
+  "/favicon",
+];
 
 function accessSecret(): Uint8Array {
   const s = process.env.JWT_ACCESS_SECRET?.trim();
@@ -48,7 +61,11 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api/decide") ||
     pathname.startsWith("/api/transactions") ||
     pathname.startsWith("/api/account") ||
-    pathname.startsWith("/api/alerts");
+    pathname.startsWith("/api/alerts") ||
+    pathname.startsWith("/api/home") ||
+    pathname.startsWith("/api/merchants") ||
+    pathname.startsWith("/api/insights") ||
+    pathname.startsWith("/api/reports");
 
   if (!isProtected) {
     return NextResponse.next();
