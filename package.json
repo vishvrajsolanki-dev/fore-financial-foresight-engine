@@ -18,7 +18,8 @@
     "test:csv": "npx tsx scripts/verify_real_csv.ts",
     "test:parity": "npx tsx scripts/ml_parity_test.ts",
     "test:auth": "npx tsx scripts/auth_oauth_unit.ts",
-    "test:account-api": "npx tsx scripts/account_api_smoke.ts"
+    "test:account-api": "npx tsx scripts/account_api_smoke.ts",
+    "record:storyboard": "tsx scripts/record_storyboard_demo.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -41,6 +42,7 @@
     "autoprefixer": "10.4.20",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.35",
+    "playwright": "^1.49.1",
     "postcss": "8.4.41",
     "prisma": "^5.22.0",
     "tailwindcss": "3.4.9",
