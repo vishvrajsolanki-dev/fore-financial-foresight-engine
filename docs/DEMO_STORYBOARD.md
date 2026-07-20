@@ -130,3 +130,29 @@ Smoke-verified locally with Playwright against `http://127.0.0.1:3000` (demo mod
 
 **Verified:** 2026-07-20 — all five featured workflows **pass**; none marked skip.  
 **Environment:** demo mode (no `DATABASE_URL`), inline ML, `npm run dev` on `:3000`
+
+---
+
+## Recordings (storyboard trailer)
+
+Recorded with [`scripts/record_storyboard_demo.ts`](../scripts/record_storyboard_demo.ts) against local demo mode.
+
+```bash
+# Terminal 1 — demo mode (no DATABASE_URL)
+unset DATABASE_URL && npm run dev
+
+# Terminal 2
+npx playwright install chromium   # once
+DEMO_BASE_URL=http://127.0.0.1:3000 npm run record:storyboard
+```
+
+Artifacts (agent run): `/opt/cursor/artifacts/demo-storyboard/`
+
+| Asset | Duration | Notes |
+|-------|----------|-------|
+| `fore-demo-desktop.mp4` / `.webm` | ~78s @ 1440×900 | Landing → demo → Past → Decide (math) → Ahead → close |
+| `fore-demo-mobile.mp4` / `.webm` | ~57s @ 390×844 | Same spine; tab bar; no math expand |
+| `desktop-*.png` / `mobile-*.png` | — | Keyframe stills per beat |
+| `demo-meta.json` | — | Paths + timestamp |
+
+**Recorded:** 2026-07-20 — USP beat includes “✓ checked your numbers” + laptop day-shift on both cuts.
